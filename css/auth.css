@@ -1,0 +1,172 @@
+body {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 80% 16%, rgba(124, 207, 53, 0.18), transparent 22%),
+    radial-gradient(circle at 18% 18%, rgba(99, 91, 255, 0.12), transparent 28%),
+    linear-gradient(180deg, #ffffff 0%, #f6f9fc 100%);
+}
+
+.np-auth-page {
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(360px, 540px);
+  gap: 54px;
+  align-items: center;
+  width: min(1120px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 48px 0;
+}
+
+.np-auth-brand {
+  display: grid;
+  gap: 30px;
+}
+
+.np-auth-logo {
+  width: min(300px, 72vw);
+  height: auto;
+}
+
+.np-auth-brand h1 {
+  max-width: 560px;
+  margin: 10px 0 0;
+  color: var(--np-text);
+  font-size: clamp(2.55rem, 4.2vw, 4.15rem);
+  font-weight: 740;
+  line-height: 1.03;
+  letter-spacing: -0.035em;
+}
+
+.np-auth-brand p:not(.np-kicker) {
+  max-width: 510px;
+  margin: 20px 0 0;
+  color: var(--np-text-muted);
+  font-size: 1rem;
+  line-height: 1.58;
+}
+
+.np-auth-card {
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--np-border);
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: var(--np-shadow);
+}
+
+.np-auth-card-inner {
+  padding: 36px 62px 28px;
+}
+
+.np-auth-card-header {
+  margin-bottom: 28px;
+}
+
+.np-auth-card h2 {
+  margin: 8px 0 0;
+  color: var(--np-text);
+  font-size: 1.62rem;
+  font-weight: 720;
+  letter-spacing: -0.025em;
+}
+
+.np-form-field {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 17px;
+}
+
+.np-form-field label {
+  color: var(--np-text-soft);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.np-form-field .form-control {
+  min-height: 50px;
+  color: var(--np-text);
+  background: #ffffff;
+  border: 1px solid #cdd8e5;
+  border-radius: var(--np-radius-sm);
+  box-shadow: 0 1px 1px rgba(24, 37, 59, 0.03);
+}
+
+.np-form-field .form-control:focus {
+  color: var(--np-text);
+  background: #ffffff;
+  border-color: #98c7eb;
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.12);
+}
+
+.np-primary-button {
+  width: 100%;
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 8px;
+  color: #ffffff;
+  font-weight: 700;
+  background: var(--np-accent);
+  border: 1px solid var(--np-accent);
+  border-radius: var(--np-radius-sm);
+  box-shadow: 0 8px 18px rgba(99, 91, 255, 0.16);
+}
+
+.np-primary-button:hover {
+  background: #5147ee;
+}
+
+.np-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.np-login-error {
+  margin: 4px 0 12px;
+  padding: 11px;
+  color: #8a0f2b;
+  background: #fff1f4;
+  border: 1px solid #ffd1dc;
+  border-radius: var(--np-radius-sm);
+}
+
+.np-auth-footer {
+  padding: 18px 22px;
+  color: var(--np-text-muted);
+  font-size: 0.82rem;
+  text-align: center;
+  background: var(--np-surface-2);
+  border-top: 1px solid var(--np-border);
+}
+
+@media (max-width: 900px) {
+  .np-auth-page {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .np-auth-brand h1 {
+    font-size: clamp(2.25rem, 9vw, 3.15rem);
+  }
+
+  .np-auth-card-inner {
+    padding: 30px 24px 24px;
+  }
+}
+
+@media (min-width: 901px) and (max-width: 1180px) {
+  .np-auth-page {
+    gap: 34px;
+  }
+
+  .np-auth-logo {
+    width: 260px;
+  }
+
+  .np-auth-brand h1 {
+    max-width: 500px;
+    font-size: clamp(2.45rem, 4vw, 3.55rem);
+  }
+}

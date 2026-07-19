@@ -1,0 +1,660 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>NextPulse | Know the Pulse of Your Factory</title>
+  <meta name="description" content="NextPulse ERP web application shell.">
+  <link rel="icon" type="image/png" href="assets/logo/nextpulse-icon.png">
+  <link rel="preconnect" href="https://cdn.jsdelivr.net">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link href="css/theme.css?v=20260719-2" rel="stylesheet">
+  <link href="css/layout.css?v=20260719-2" rel="stylesheet">
+  <link href="css/components.css?v=20260719-2" rel="stylesheet">
+  <link href="css/app.css?v=20260719-2" rel="stylesheet">
+</head>
+<body>
+  <div class="np-app" id="npApp">
+    <div data-component="sidebar"></div>
+
+    <div class="np-main">
+      <div data-component="header"></div>
+
+      <main class="np-content" id="mainContent" tabindex="-1">
+        <div data-page-panel="home">
+        <section class="np-hero">
+          <div>
+            <p class="np-kicker">NextPulse ERP</p>
+            <h1>Know the Pulse of Your Factory</h1>
+            <p class="np-hero-copy">
+              A calm operating layer for inventory, receiving, transfers, and production.
+            </p>
+          </div>
+        </section>
+
+        <section class="np-module-grid" aria-label="NextPulse modules">
+          <a class="np-module-card" href="#" data-page="inventory" data-page-title="Inventory">
+            <span class="np-card-icon"><i class="bi bi-box-seam"></i></span>
+            <span>
+              <strong>Inventory</strong>
+              <small>Stock balances, lots, and movements</small>
+            </span>
+          </a>
+          <a class="np-module-card" href="#" data-page="receiving" data-page-title="Receiving">
+            <span class="np-card-icon"><i class="bi bi-inboxes"></i></span>
+            <span>
+              <strong>Receiving</strong>
+              <small>Supplier receipts and material intake</small>
+            </span>
+          </a>
+          <a class="np-module-card" href="#" data-page="transfers" data-page-title="Transfers">
+            <span class="np-card-icon"><i class="bi bi-arrow-left-right"></i></span>
+            <span>
+              <strong>Transfers</strong>
+              <small>Factory, staging, and warehouse flows</small>
+            </span>
+          </a>
+          <a class="np-module-card" href="#" data-page="production" data-page-title="Production">
+            <span class="np-card-icon"><i class="bi bi-cpu"></i></span>
+            <span>
+              <strong>Production</strong>
+              <small>Batch planning and material usage</small>
+            </span>
+          </a>
+        </section>
+
+        <section class="np-panel">
+          <div class="np-panel-header">
+            <div>
+              <p class="np-kicker">Today</p>
+              <h2>Operational Workspace</h2>
+            </div>
+            <button class="btn btn-sm btn-outline-light-subtle" type="button" id="refreshHealth">
+              <i class="bi bi-arrow-clockwise"></i>
+              Refresh
+            </button>
+          </div>
+
+          <div class="np-status-grid">
+            <div class="np-status-tile">
+              <span>Backend</span>
+              <strong id="apiStatus">Waiting</strong>
+            </div>
+            <div class="np-status-tile">
+              <span>Environment</span>
+              <strong>Local</strong>
+            </div>
+            <div class="np-status-tile">
+              <span>Account</span>
+              <strong>ASHANE</strong>
+            </div>
+          </div>
+        </section>
+        </div>
+
+        <section class="np-panel np-inventory-panel" data-page-panel="inventory" hidden>
+          <div class="np-panel-header">
+            <div>
+              <p class="np-kicker">Inventory</p>
+              <h2>Stock Overview</h2>
+            </div>
+            <div class="np-panel-actions">
+              <button class="btn btn-sm btn-outline-light-subtle" type="button" id="inventoryColumnsButton" aria-expanded="false">
+                <i class="bi bi-layout-three-columns"></i>
+                Edit columns
+              </button>
+              <button class="btn btn-sm btn-outline-light-subtle" type="button" id="refreshInventory">
+                <i class="bi bi-arrow-clockwise"></i>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <div class="np-table-toolbar">
+            <div class="np-search">
+              <i class="bi bi-search"></i>
+              <input type="search" id="inventorySearch" placeholder="Search SKU, description, or location">
+            </div>
+            <div class="np-filter-row">
+              <span class="np-filter-field">
+                <select id="inventoryCategoryFilter" class="np-filter-select" aria-label="Filter by category">
+                  <option value="">All categories</option>
+                </select>
+              </span>
+              <span class="np-filter-field">
+                <select id="inventoryLocationFilter" class="np-filter-select" aria-label="Filter by location">
+                  <option value="">All locations</option>
+                </select>
+              </span>
+              <label class="np-toggle">
+                <input type="checkbox" id="inventoryNonZeroOnly">
+                <span>Non-zero only</span>
+              </label>
+              <div class="np-toolbar-meta" id="inventoryCount">0 rows</div>
+            </div>
+          </div>
+
+          <div class="np-column-popover" id="inventoryColumnPopover" hidden>
+            <div class="np-column-popover-header">
+              <strong>Visible columns</strong>
+              <button class="np-row-action" type="button" id="inventoryColumnsClose" aria-label="Close column menu">
+                <i class="bi bi-x-lg"></i>
+              </button>
+            </div>
+            <div class="np-column-list" id="inventoryColumnList"></div>
+          </div>
+
+          <div class="np-table-wrap">
+            <table class="np-table np-inventory-table">
+              <thead>
+                <tr>
+                  <th data-column="item">Item</th>
+                  <th data-column="category">Category</th>
+                  <th data-column="location">Locations</th>
+                  <th data-column="packageStock" class="text-end">Package Stock</th>
+                  <th data-column="baseStock" class="text-end">Base Stock</th>
+                  <th data-column="actions" class="text-end">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="inventoryTableBody">
+                <tr>
+                  <td colspan="6" class="np-empty-cell">Inventory data will appear here.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="np-panel" data-page-panel="production" hidden>
+          <div class="np-panel-header">
+            <div>
+              <p class="np-kicker">Production</p>
+              <h2>Production Batch</h2>
+            </div>
+            <div class="np-panel-actions">
+              <button class="btn btn-sm btn-outline-light-subtle" type="button" id="resetProduction">
+                Reset
+              </button>
+              <button class="np-primary-button" type="button" id="prepareProductionMaterials" disabled>
+                <i class="bi bi-arrow-left-right"></i>
+                Prepare Materials
+              </button>
+              <button class="np-primary-button" type="button" id="completeProductionBatch" disabled>
+                <i class="bi bi-check2-circle"></i>
+                Complete Production
+              </button>
+            </div>
+          </div>
+
+          <div class="np-workflow" aria-label="Production workflow">
+            <div class="np-workflow-step is-active" data-production-step="draft">
+              <span>1</span>
+              <strong>Draft</strong>
+              <small>Batch created</small>
+            </div>
+            <div class="np-workflow-step" data-production-step="materials">
+              <span>2</span>
+              <strong>Materials</strong>
+              <small>Transfer to production</small>
+            </div>
+            <div class="np-workflow-step" data-production-step="progress">
+              <span>3</span>
+              <strong>In Production</strong>
+              <small>Manufacturing</small>
+            </div>
+            <div class="np-workflow-step" data-production-step="complete">
+              <span>4</span>
+              <strong>Complete</strong>
+              <small>Output posted</small>
+            </div>
+          </div>
+
+          <div class="np-alert np-panel-top-alert" id="productionTopMessage" hidden></div>
+
+          <div class="np-workspace-grid">
+            <form class="np-form-panel" id="productionForm">
+              <div class="np-form-section">
+                <div>
+                  <p class="np-mini-label">New Batch</p>
+                  <h3>Plan production</h3>
+                </div>
+                <div class="np-form-grid">
+                  <label class="np-field np-field-wide">
+                    <span>Continue open batch</span>
+                    <select id="productionOpenBatch">
+                      <option value="">No open batches loaded</option>
+                    </select>
+                  </label>
+                  <label class="np-field np-field-wide">
+                    <span>Product / Recipe</span>
+                    <select id="productionRecipe" required>
+                      <option value="">Loading recipes...</option>
+                    </select>
+                  </label>
+                  <label class="np-field">
+                    <span>Production quantity</span>
+                    <input type="number" id="productionQuantity" min="1" step="1" placeholder="Example: 36000" required>
+                  </label>
+                  <label class="np-field">
+                    <span>Production date</span>
+                    <input type="date" id="productionDate" required>
+                  </label>
+                  <p class="np-receiving-preview np-field-wide" id="productionPreview">
+                    Select recipe and quantity to create a draft batch.
+                  </p>
+                  <label class="np-field np-field-wide">
+                    <span>Notes</span>
+                    <input type="text" id="productionNotes" placeholder="Optional production note">
+                  </label>
+                </div>
+                <div class="np-form-actions">
+                  <button class="btn btn-sm btn-outline-light-subtle" type="submit">
+                    <i class="bi bi-plus-lg"></i>
+                    Create Draft Batch
+                  </button>
+                </div>
+              </div>
+            </form>
+
+            <aside class="np-summary-panel">
+              <p class="np-mini-label">Current Batch</p>
+              <h3 id="productionBatchTitle">No batch yet</h3>
+              <p class="np-summary-copy" id="productionBatchCopy">
+                Create a draft batch to calculate material requirements from the active recipe.
+              </p>
+              <div class="np-summary-stat">
+                <span>Planned output</span>
+                <strong id="productionPlannedOutput">0</strong>
+              </div>
+              <div class="np-summary-stat">
+                <span>Material lines</span>
+                <strong id="productionMaterialCount">0</strong>
+              </div>
+              <div class="np-completion-fields" id="productionCompletionFields" hidden>
+                <label class="np-field">
+                  <span>Good cookies</span>
+                  <input type="number" id="productionGoodQuantity" min="1" step="1">
+                </label>
+                <label class="np-field">
+                  <span>Fire / Zayi</span>
+                  <input type="number" id="productionWasteQuantity" min="0" step="1" value="0">
+                </label>
+              </div>
+              <div class="np-alert" id="productionMessage" hidden></div>
+            </aside>
+          </div>
+
+          <div class="np-recent-batches" id="productionRecentBatches">
+            <div class="np-recent-batches-header">
+              <div>
+                <p class="np-mini-label">Active Work</p>
+                <h3>Open Batches</h3>
+              </div>
+              <span id="productionRecentBatchCount">0 batches</span>
+            </div>
+            <div class="np-recent-batch-list" id="productionRecentBatchList">
+              <button class="np-recent-batch-row" type="button" disabled>
+                Open production batches will appear here.
+              </button>
+            </div>
+          </div>
+
+          <div class="np-table-wrap np-table-wrap-spaced">
+            <table class="np-table np-production-table">
+              <thead>
+                <tr>
+                  <th>Material</th>
+                  <th class="text-end">Required</th>
+                  <th class="text-end">Factory Stock</th>
+                  <th class="text-end">Production Area Stock</th>
+                  <th class="text-end">Transfer</th>
+                  <th class="text-center">Status</th>
+                </tr>
+              </thead>
+              <tbody id="productionMaterialBody">
+                <tr>
+                  <td colspan="6" class="np-empty-cell">Material requirements will appear here.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="np-panel" data-page-panel="transfers" hidden>
+          <div class="np-panel-header">
+            <div>
+              <p class="np-kicker">Transfers</p>
+              <h2>Location Transfer</h2>
+            </div>
+            <div class="np-panel-actions">
+              <button class="btn btn-sm btn-outline-light-subtle" type="button" id="resetTransfer">
+                Reset
+              </button>
+              <button class="np-primary-button" type="button" id="postTransfer" disabled>
+                <i class="bi bi-check2-circle"></i>
+                Post Transfer
+              </button>
+            </div>
+          </div>
+
+          <div class="np-workspace-grid">
+            <form class="np-form-panel" id="transferForm">
+              <div class="np-form-section">
+                <div>
+                  <p class="np-mini-label">Move Stock</p>
+                  <h3>Add transfer line</h3>
+                </div>
+                <div class="np-form-grid">
+                  <label class="np-field np-field-wide">
+                    <span>SKU</span>
+                    <select id="transferSku" required>
+                      <option value="">Loading SKUs...</option>
+                    </select>
+                  </label>
+                  <label class="np-field">
+                    <span>From</span>
+                    <select id="transferFromLocation" required>
+                      <option value="">Loading locations...</option>
+                    </select>
+                  </label>
+                  <label class="np-field">
+                    <span>To</span>
+                    <select id="transferToLocation" required>
+                      <option value="">Loading locations...</option>
+                    </select>
+                  </label>
+                  <label class="np-field" data-transfer-material-field>
+                    <span>Package quantity</span>
+                    <input type="number" id="transferPackageQty" min="0.0001" step="0.0001" value="1" placeholder="1">
+                  </label>
+                  <label class="np-field" data-transfer-finished-field hidden>
+                    <span>Pallets</span>
+                    <input type="number" id="transferPalletQty" min="0.0001" step="0.0001" value="1" placeholder="1">
+                  </label>
+                  <label class="np-field" data-transfer-finished-field hidden>
+                    <span>Boxes per pallet</span>
+                    <input type="number" id="transferBoxesPerPallet" min="1" step="1" value="250" placeholder="250">
+                  </label>
+                  <label class="np-field" data-transfer-finished-field hidden>
+                    <span>Units per box</span>
+                    <input type="number" id="transferUnitsPerBox" min="1" step="1" value="12" placeholder="12">
+                  </label>
+                  <p class="np-receiving-preview np-field-wide" id="transferPreview">
+                    Select a SKU and locations to see what will be transferred.
+                  </p>
+                  <label class="np-field np-field-wide">
+                    <span>Notes</span>
+                    <input type="text" id="transferLineNotes" placeholder="Optional note">
+                  </label>
+                </div>
+                <div class="np-form-actions">
+                  <button class="btn btn-sm btn-outline-light-subtle" type="submit">
+                    <i class="bi bi-plus-lg"></i>
+                    Add Line
+                  </button>
+                </div>
+              </div>
+
+              <div class="np-form-section np-form-section-compact">
+                <h3>Transfer Details</h3>
+                <div class="np-form-grid">
+                  <label class="np-field">
+                    <span>Transfer date</span>
+                    <input type="date" id="transferDate" required>
+                  </label>
+                  <label class="np-field">
+                    <span>Reference no</span>
+                    <input type="text" id="transferReference" placeholder="Shipment, document, or note no">
+                  </label>
+                  <label class="np-field np-field-wide">
+                    <span>Transfer note</span>
+                    <input type="text" id="transferNotes" placeholder="Optional transfer note">
+                  </label>
+                </div>
+              </div>
+            </form>
+
+            <aside class="np-summary-panel">
+              <p class="np-mini-label">Draft Transfer</p>
+              <h3 id="transferLineCount">No lines yet</h3>
+              <p class="np-summary-copy" id="transferSummaryCopy">
+                Add one or more transfer lines, review the quantities, then post the movement.
+              </p>
+              <div class="np-summary-stat">
+                <span>Total pallets</span>
+                <strong id="transferTotalPallets">0</strong>
+              </div>
+              <div class="np-summary-stat">
+                <span>Total base quantity</span>
+                <strong id="transferTotalBaseQty">0</strong>
+              </div>
+              <div class="np-alert" id="transferMessage" hidden></div>
+            </aside>
+          </div>
+
+          <div class="np-table-wrap np-table-wrap-spaced">
+            <table class="np-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Description</th>
+                  <th>From → To</th>
+                  <th>Summary</th>
+                  <th class="text-end">Base Qty</th>
+                  <th>Base Unit</th>
+                  <th>Notes</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody id="transferLineBody">
+                <tr>
+                  <td colspan="8" class="np-empty-cell">No transfer lines added.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="np-panel" data-page-panel="receiving" hidden>
+          <div class="np-panel-header">
+            <div>
+              <p class="np-kicker">Receiving</p>
+              <h2>Material Receipt</h2>
+            </div>
+            <div class="np-panel-actions">
+              <button class="btn btn-sm btn-outline-light-subtle" type="button" id="resetReceiving">
+                Reset
+              </button>
+              <button class="np-primary-button" type="button" id="postReceiving" disabled>
+                <i class="bi bi-check2-circle"></i>
+                Post Receipt
+              </button>
+            </div>
+          </div>
+
+          <div class="np-workspace-grid">
+            <form class="np-form-panel" id="receivingForm">
+              <div class="np-form-section">
+                <div>
+                  <p class="np-mini-label">Receive Stock</p>
+                  <h3>Add material</h3>
+                </div>
+                <div class="np-form-grid">
+                  <label class="np-field np-field-wide">
+                    <span>SKU</span>
+                    <select id="receivingSku" required autofocus>
+                      <option value="">Loading SKUs...</option>
+                    </select>
+                  </label>
+                  <label class="np-field">
+                    <span>Reason</span>
+                    <select id="receivingReason" required>
+                      <option value="MAL_KABUL">Mal Kabul</option>
+                      <option value="SAYIM_FAZLASI">Sayım Fazlası</option>
+                      <option value="MANUEL_STOK_GIRISI">Manuel Stok Girişi</option>
+                    </select>
+                  </label>
+                  <label class="np-field">
+                    <span>Package quantity</span>
+                    <input type="number" id="receivingPackageQty" min="0.0001" step="0.0001" value="1" placeholder="1" required>
+                  </label>
+                  <p class="np-receiving-preview np-field-wide" id="receivingPackagePreview">
+                    Select a SKU and package quantity to see what will be received.
+                  </p>
+                  <label class="np-field np-field-wide">
+                    <span id="receivingNotesLabel">Notes</span>
+                    <input type="text" id="receivingNotes" placeholder="Optional note">
+                  </label>
+                </div>
+                <div class="np-form-actions">
+                  <button class="btn btn-sm btn-outline-light-subtle" type="submit">
+                    <i class="bi bi-plus-lg"></i>
+                    Add Line
+                  </button>
+                </div>
+              </div>
+
+              <div class="np-form-section np-form-section-compact">
+                <h3>Receipt Details</h3>
+                <div class="np-form-grid">
+                  <label class="np-field">
+                    <span>Location</span>
+                    <select id="receivingLocation">
+                      <option value="FACTORY">Factory</option>
+                    </select>
+                  </label>
+                  <label class="np-field">
+                    <span>Receipt date</span>
+                    <input type="date" id="receivingDate" required>
+                  </label>
+                  <label class="np-field">
+                    <span>Supplier</span>
+                    <input type="text" id="receivingSupplier" placeholder="Supplier name">
+                  </label>
+                  <label class="np-field">
+                    <span>Reference no</span>
+                    <input type="text" id="receivingReference" placeholder="Invoice, PO, or delivery note">
+                  </label>
+                </div>
+              </div>
+            </form>
+
+            <aside class="np-summary-panel">
+              <p class="np-mini-label">Draft Receipt</p>
+              <h3 id="receivingLineCount">No lines yet</h3>
+              <p class="np-summary-copy">
+                Add one or more received materials, review the quantities, then post the receipt to inventory.
+              </p>
+              <div class="np-summary-stat">
+                <span>Total packages</span>
+                <strong id="receivingTotalPackages">0</strong>
+              </div>
+              <div class="np-summary-stat">
+                <span>Total base quantity</span>
+                <strong id="receivingTotalBaseQty">0</strong>
+              </div>
+              <div class="np-alert" id="receivingMessage" hidden></div>
+            </aside>
+          </div>
+
+          <div class="np-table-wrap np-table-wrap-spaced">
+            <table class="np-table">
+              <thead>
+                <tr>
+                  <th>SKU</th>
+                  <th>Description</th>
+                  <th>Reason</th>
+                  <th class="text-end">Package Qty</th>
+                  <th>Package Unit</th>
+                  <th class="text-end">Base Qty</th>
+                  <th>Base Unit</th>
+                  <th>Notes</th>
+                  <th class="text-end">Action</th>
+                </tr>
+              </thead>
+              <tbody id="receivingLineBody">
+                <tr>
+                  <td colspan="9" class="np-empty-cell">No receiving lines added.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="np-backdrop" id="sidebarBackdrop" hidden></div>
+  <aside class="np-drawer" id="inventoryDrawer" aria-label="Inventory item details" aria-hidden="true">
+    <div class="np-drawer-header">
+      <div class="np-drawer-title">
+        <span class="np-item-thumb np-item-thumb-lg" id="inventoryDrawerThumb">SKU</span>
+        <div>
+          <p class="np-mini-label" id="inventoryDrawerCategory">Inventory</p>
+          <h3 id="inventoryDrawerTitle">Select item</h3>
+          <span id="inventoryDrawerSku" class="np-muted-text"></span>
+        </div>
+      </div>
+      <button class="np-icon-button" type="button" id="inventoryDrawerClose" aria-label="Close inventory details">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="np-drawer-body">
+      <div class="np-drawer-stock-grid">
+        <div class="np-summary-stat">
+          <span>On Hand</span>
+          <strong id="inventoryDrawerPackageStock">0</strong>
+        </div>
+        <div class="np-summary-stat">
+          <span>Base Stock</span>
+          <strong id="inventoryDrawerBaseStock">0</strong>
+        </div>
+      </div>
+      <div class="np-info-strip" id="inventoryDrawerConversion"></div>
+      <div class="np-drawer-actions">
+        <button class="np-primary-button" type="button" id="inventoryDrawerReceive">
+          <i class="bi bi-inboxes"></i>
+          Receive
+        </button>
+        <button class="btn btn-sm btn-outline-light-subtle" type="button" disabled title="Coming next">
+          <i class="bi bi-box-arrow-up-right"></i>
+          Use
+        </button>
+        <button class="btn btn-sm btn-outline-light-subtle" type="button" id="inventoryDrawerTransfer">
+          <i class="bi bi-arrow-left-right"></i>
+          Transfer
+        </button>
+      </div>
+      <div class="np-drawer-section">
+        <div class="np-drawer-section-title">
+          <strong>Stock by location</strong>
+          <span id="inventoryDrawerLocationCount">0 locations</span>
+        </div>
+        <div class="np-location-stock-list" id="inventoryDrawerLocations"></div>
+      </div>
+      <div class="np-drawer-section">
+        <div class="np-drawer-section-title">
+          <strong>Recent movements</strong>
+          <span id="inventoryDrawerMovementCount">0 movements</span>
+        </div>
+        <div class="np-movement-list" id="inventoryDrawerMovements">
+          <div class="np-empty-state-compact">Open an item to see recent inventory movement.</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+  <div class="np-backdrop np-drawer-backdrop" id="inventoryDrawerBackdrop" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="js/api.js?v=20260719-2"></script>
+  <script src="js/auth.js?v=20260719-2"></script>
+  <script src="js/component-loader.js?v=20260719-2"></script>
+  <script src="js/ui.js?v=20260719-2"></script>
+  <script src="js/inventory.js?v=20260719-2"></script>
+  <script src="js/receiving.js?v=20260719-2"></script>
+  <script src="js/production.js?v=20260719-2"></script>
+  <script src="js/transfer.js?v=20260719-2"></script>
+  <script src="js/app.js?v=20260719-2"></script>
+</body>
+</html>

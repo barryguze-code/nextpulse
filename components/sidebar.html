@@ -1,0 +1,108 @@
+<aside class="np-sidebar" id="sidebar" aria-label="Main navigation">
+  <div class="np-sidebar-brand">
+    <a class="np-brand" href="index.html" aria-label="NextPulse Home">
+      <img class="np-brand-logo-compact" src="assets/logo/nextpulse-transparent.png" alt="NextPulse">
+      <span class="np-brand-subtle d-block">&#9672; A&#351;hane</span>
+    </a>
+    <button class="np-icon-button" type="button" data-sidebar-collapse aria-label="Collapse navigation" title="Collapse navigation">
+      <i class="bi bi-layout-sidebar-inset"></i>
+    </button>
+    <button class="np-icon-button d-lg-none" type="button" data-sidebar-close aria-label="Close navigation">
+      <i class="bi bi-x-lg"></i>
+    </button>
+  </div>
+
+  <div class="np-sidebar-heading-row">
+    <p class="np-sidebar-heading">Favorites</p>
+  </div>
+  <nav class="np-nav" id="favoriteNav" aria-label="Favorite pages">
+    <div class="np-nav-item np-nav-item-static" data-module-key="home" data-favorite-item>
+      <a class="np-nav-link active" href="#" data-page="home" data-page-title="Home">
+        <i class="bi bi-house"></i>
+        <span>Home</span>
+      </a>
+    </div>
+    <div class="np-nav-item" data-module-key="inventory" data-favorite-item>
+      <a class="np-nav-link" href="#" data-page="inventory" data-page-title="Inventory">
+        <i class="bi bi-box-seam"></i>
+        <span>Inventory</span>
+      </a>
+      <button class="np-favorite-button is-favorite" type="button" data-favorite-toggle="inventory" aria-label="Remove Inventory from favorites" title="Remove from favorites">
+        <i class="bi bi-star-fill"></i>
+      </button>
+    </div>
+  </nav>
+
+  <div class="np-sidebar-heading-row">
+    <p class="np-sidebar-heading">All Modules</p>
+  </div>
+  <nav class="np-nav" id="moduleNav" aria-label="All Modules">
+    <div class="np-nav-item" data-module-key="inventory">
+      <a class="np-nav-link" href="#" data-page="inventory" data-page-title="Inventory">
+        <i class="bi bi-box-seam"></i>
+        <span>Inventory</span>
+      </a>
+      <button class="np-favorite-button" type="button" data-favorite-toggle="inventory" aria-label="Add Inventory to favorites" title="Add to favorites">
+        <i class="bi bi-star"></i>
+      </button>
+    </div>
+    <div class="np-nav-item" data-module-key="receiving">
+      <a class="np-nav-link" href="#" data-page="receiving" data-page-title="Receiving">
+        <i class="bi bi-inboxes"></i>
+        <span>Receiving</span>
+      </a>
+      <button class="np-favorite-button" type="button" data-favorite-toggle="receiving" aria-label="Add Receiving to favorites" title="Add to favorites">
+        <i class="bi bi-star"></i>
+      </button>
+    </div>
+    <div class="np-nav-item" data-module-key="transfers">
+      <a class="np-nav-link" href="#" data-page="transfers" data-page-title="Transfers">
+        <i class="bi bi-arrow-left-right"></i>
+        <span>Transfers</span>
+      </a>
+      <button class="np-favorite-button" type="button" data-favorite-toggle="transfers" aria-label="Add Transfers to favorites" title="Add to favorites">
+        <i class="bi bi-star"></i>
+      </button>
+    </div>
+    <div class="np-nav-item" data-module-key="production">
+      <a class="np-nav-link" href="#" data-page="production" data-page-title="Production">
+        <i class="bi bi-cpu"></i>
+        <span>Production</span>
+      </a>
+      <button class="np-favorite-button" type="button" data-favorite-toggle="production" aria-label="Add Production to favorites" title="Add to favorites">
+        <i class="bi bi-star"></i>
+      </button>
+    </div>
+    <div class="np-nav-item" data-module-key="orders">
+      <a class="np-nav-link" href="#" data-page-title="Orders">
+        <i class="bi bi-clipboard-check"></i>
+        <span>Orders</span>
+      </a>
+      <button class="np-favorite-button" type="button" data-favorite-toggle="orders" aria-label="Add Orders to favorites" title="Add to favorites">
+        <i class="bi bi-star"></i>
+      </button>
+    </div>
+    <div class="np-nav-item" data-module-key="reports">
+      <a class="np-nav-link" href="#" data-page-title="Reports">
+        <i class="bi bi-bar-chart"></i>
+        <span>Reports</span>
+      </a>
+      <button class="np-favorite-button" type="button" data-favorite-toggle="reports" aria-label="Add Reports to favorites" title="Add to favorites">
+        <i class="bi bi-star"></i>
+      </button>
+    </div>
+  </nav>
+
+  <div class="np-sidebar-footer">
+    <div class="np-nav-item" data-module-key="settings">
+      <a class="np-nav-link" href="#" data-page-title="Settings">
+        <i class="bi bi-gear"></i>
+        <span>Settings</span>
+      </a>
+    </div>
+    <div class="np-sidebar-system">
+      <span class="np-live-dot"></span>
+      <span>Local development</span>
+    </div>
+  </div>
+</aside>

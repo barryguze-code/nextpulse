@@ -1,0 +1,41 @@
+.btn-outline-light-subtle {
+  --bs-btn-color: var(--np-text-soft);
+  --bs-btn-border-color: var(--np-border-strong);
+  --bs-btn-hover-color: var(--np-text);
+  --bs-btn-hover-bg: #ffffff;
+  --bs-btn-hover-border-color: var(--np-border-strong);
+  background: #ffffff;
+  border-radius: var(--np-radius-sm);
+  box-shadow: 0 1px 1px rgba(24, 37, 59, 0.04);
+}
+
+.btn-outline-light-subtle:focus-visible,
+.np-icon-button:focus-visible,
+.np-user-button:focus-visible,
+.np-language-button:focus-visible,
+.np-primary-button:focus-visible,
+.np-filter-select:focus-visible,
+.np-toggle:focus-within {
+  outline: 0;
+  box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.14);
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.is-loading {
+  cursor: progress;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .np-nav-link,
+  .np-module-card,
+  .np-icon-button,
+  .np-language-button,
+  .np-user-button,
+  .np-filter-chip,
+  .np-primary-button {
+    transition: background-color 140ms ease, border-color 140ms ease, color 140ms ease, box-shadow 140ms ease, transform 140ms ease;
+  }
+}
