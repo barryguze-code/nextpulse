@@ -1,0 +1,15 @@
+.np-orders-panel { display: grid; gap: 1.25rem; }
+.np-order-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .85rem; }
+.np-orders-alert { margin: 0; }
+.np-orders-table tbody tr[data-order-row] { cursor: pointer; }
+.np-orders-table tbody tr[data-order-row]:hover td { background: rgba(99, 91, 255, .035); }
+.np-order-number { display: grid; gap: .15rem; }
+.np-order-number small, .np-order-source small { color: var(--np-text-soft); }
+.np-order-status { display: inline-flex; align-items: center; border-radius: 999px; padding: .25rem .55rem; background: rgba(99, 91, 255, .1); color: var(--np-primary); font-size: .76rem; font-weight: 700; letter-spacing: .03em; }
+.np-order-status[data-status="FULFILLED"] { background: rgba(22, 163, 74, .11); color: #15803d; }
+.np-order-status[data-status="CANCELLED"] { background: rgba(220, 38, 38, .09); color: #b91c1c; }
+.np-order-detail-row td { background: #f8f9fc; padding: 1rem 1.25rem !important; }
+.np-order-lines { display: grid; gap: .55rem; }
+.np-order-line { display: grid; grid-template-columns: minmax(10rem, 1fr) minmax(16rem, 2fr) auto; gap: 1rem; align-items: center; padding: .7rem .8rem; border: 1px solid var(--np-border); border-radius: var(--np-radius-sm); background: #fff; }
+.np-order-line span:last-child { font-weight: 700; white-space: nowrap; }
+@media (max-width: 800px) { .np-order-stats { grid-template-columns: 1fr; } .np-order-line { grid-template-columns: 1fr; gap: .25rem; } }

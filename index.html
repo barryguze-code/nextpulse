@@ -13,6 +13,7 @@
   <link href="css/layout.css?v=20260719-3" rel="stylesheet">
   <link href="css/components.css?v=20260719-3" rel="stylesheet">
   <link href="css/app.css?v=20260719-3" rel="stylesheet">
+  <link href="css/orders.css?v=20260720-1" rel="stylesheet">
 </head>
 <body>
   <div class="np-app" id="npApp">
@@ -60,6 +61,13 @@
             <span>
               <strong>Production</strong>
               <small>Batch planning and material usage</small>
+            </span>
+          </a>
+          <a class="np-module-card" href="#" data-page="orders" data-page-title="Orders">
+            <span class="np-card-icon"><i class="bi bi-clipboard-check"></i></span>
+            <span>
+              <strong>Orders</strong>
+              <small>BİM email orders and delivery dates</small>
             </span>
           </a>
         </section>
@@ -581,6 +589,37 @@
             </table>
           </div>
         </section>
+
+        <section class="np-panel np-orders-panel" data-page-panel="orders" hidden>
+          <div class="np-panel-header">
+            <div><p class="np-kicker">Sales Orders</p><h2>Customer Orders</h2></div>
+            <div class="np-panel-actions">
+              <button class="btn btn-sm btn-outline-light-subtle" type="button" id="refreshOrders"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+              <button class="np-primary-button" type="button" id="importGmailOrders"><i class="bi bi-envelope-arrow-down"></i> Import Gmail</button>
+            </div>
+          </div>
+          <div class="np-order-stats">
+            <div class="np-status-tile"><span>Total orders</span><strong id="ordersTotal">0</strong></div>
+            <div class="np-status-tile"><span>Open orders</span><strong id="ordersOpen">0</strong></div>
+            <div class="np-status-tile"><span>Next delivery</span><strong id="ordersNextDelivery">—</strong></div>
+          </div>
+          <div class="np-alert np-orders-alert" id="ordersMessage" hidden></div>
+          <div class="np-table-toolbar">
+            <div class="np-search"><i class="bi bi-search"></i><input type="search" id="ordersSearch" placeholder="Search order, customer, or PDF"></div>
+            <div class="np-filter-row">
+              <span class="np-filter-field"><select id="ordersStatusFilter" class="np-filter-select" aria-label="Filter by order status">
+                <option value="">All statuses</option><option value="IMPORTED">Imported</option><option value="CONFIRMED">Confirmed</option><option value="IN_PROGRESS">In progress</option><option value="FULFILLED">Fulfilled</option><option value="CANCELLED">Cancelled</option>
+              </select></span>
+              <div class="np-toolbar-meta" id="ordersCount">0 orders</div>
+            </div>
+          </div>
+          <div class="np-table-wrap">
+            <table class="np-table np-orders-table">
+              <thead><tr><th>Order</th><th>Customer</th><th>Order date</th><th>Delivery</th><th>Status</th><th class="text-end">Lines</th><th>Source</th><th class="text-end">Details</th></tr></thead>
+              <tbody id="ordersTableBody"><tr><td colspan="8" class="np-empty-cell">Orders will appear here.</td></tr></tbody>
+            </table>
+          </div>
+        </section>
       </main>
     </div>
   </div>
@@ -655,6 +694,7 @@
   <script src="js/receiving.js?v=20260719-3"></script>
   <script src="js/production.js?v=20260719-3"></script>
   <script src="js/transfer.js?v=20260719-3"></script>
-  <script src="js/app.js?v=20260719-3"></script>
+  <script src="js/orders.js?v=20260720-1"></script>
+  <script src="js/app.js?v=20260720-1"></script>
 </body>
 </html>

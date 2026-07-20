@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     window.NextPulse.receiving?.init();
     window.NextPulse.production?.init();
     window.NextPulse.transfer?.init();
+    window.NextPulse.orders?.init();
     window.NextPulse.auth.hydrateUser(user);
   } finally {
     document.body.classList.remove("is-loading");
