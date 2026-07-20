@@ -133,6 +133,7 @@ window.NextPulse.production = (() => {
 
   function hasInsufficientTransfer() {
     return Array.from(document.querySelectorAll("[data-production-transfer]"))
+      .filter((input) => input.offsetParent !== null)
       .some((input) => isFactoryTransferShort(input) || isTotalStockShort(input) || isTransferTooLow(input));
   }
 
@@ -145,6 +146,7 @@ window.NextPulse.production = (() => {
 
     return goodQuantity <= 0
       || Array.from(document.querySelectorAll("[data-production-consume]"))
+        .filter((input) => input.offsetParent !== null)
         .some((input) => numericValue(input.value) < 0 || isConsumptionTooHigh(input));
   }
 
@@ -175,7 +177,7 @@ window.NextPulse.production = (() => {
       const totalShort = isTotalStockShort(input);
       const transferLow = isTransferTooLow(input);
       const transferNotNeeded = isTransferNotNeeded(input);
-      const row = input.closest("tr");
+      const row = input.closest("tr, [data-production-material]");
       const factoryCell = row?.querySelector("[data-production-factory-cell]");
       const productionCell = row?.querySelector("[data-production-area-cell]");
       const requiredCell = row?.querySelector("[data-production-required-cell]");
@@ -206,7 +208,7 @@ window.NextPulse.production = (() => {
   function updateConsumptionWarnings() {
     document.querySelectorAll("[data-production-consume]").forEach((input) => {
       const tooHigh = isConsumptionTooHigh(input);
-      const row = input.closest("tr");
+      const row = input.closest("tr, [data-production-material]");
       const productionCell = row?.querySelector("[data-production-area-cell]");
       const statusIcon = row?.querySelector("[data-production-stock-status]");
       const message = tooHigh
@@ -545,6 +547,7 @@ window.NextPulse.production = (() => {
     const completeButton = document.getElementById("completeProductionBatch");
     const completionFields = document.getElementById("productionCompletionFields");
     const body = document.getElementById("productionMaterialBody");
+    const mobileList = document.getElementById("productionMobileList");
 
     if (!currentBatch) {
       if (title) {
@@ -571,6 +574,7 @@ window.NextPulse.production = (() => {
       if (body) {
         body.innerHTML = `<tr><td colspan="5" class="np-empty-cell">Material requirements will appear here.</td></tr>`;
       }
+      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">Material requirements will appear here.</div>`;
       updateWorkflow("DRAFT");
       renderRecentBatches();
       return;
@@ -608,6 +612,7 @@ window.NextPulse.production = (() => {
 
     if (materials.length === 0) {
       body.innerHTML = `<tr><td colspan="6" class="np-empty-cell">No materials found for this recipe.</td></tr>`;
+      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">No materials found for this recipe.</div>`;
       return;
     }
 
@@ -693,6 +698,32 @@ window.NextPulse.production = (() => {
           </td>
         </tr>
       `;
+    }).join("");
+
+    if (mobileList) mobileList.innerHTML = materials.map((line) => {
+      const factoryBaseQty = Number(line.factoryOnHandBaseQuantity || 0);
+      const productionBaseQty = Number(line.productionAreaOpeningBaseQuantity || 0);
+      const basePerContainer = numericValue(line.expectedBaseQuantityPerContainer);
+      const requiredBaseQty = numericValue(line.plannedBaseQuantityWithWaste);
+      const requiredContainers = basePerContainer > 0 ? requiredBaseQty / basePerContainer : requiredBaseQty;
+      const factoryContainers = Number(line.factoryOnHandContainerQuantity || 0);
+      const productionContainers = basePerContainer > 0 ? productionBaseQty / basePerContainer : 0;
+      const suggested = suggestedTransferPackageQuantity(requiredBaseQty, productionBaseQty, basePerContainer);
+      const consumed = Number(line.actualConsumedBaseQuantity || 0) > 0 && basePerContainer > 0 ? Number(line.actualConsumedBaseQuantity) / basePerContainer : requiredContainers;
+      const isDraft = batch.status === "DRAFT";
+      const isInProgress = batch.status === "IN_PROGRESS";
+      const value = isInProgress ? formatInputQuantity(consumed) : formatPackageInputQuantity(suggested);
+      const attribute = isInProgress ? `data-production-consume="${escapeHtml(line.batchMaterialId)}"` : (isDraft ? `data-production-transfer="${escapeHtml(line.batchMaterialId)}"` : "");
+      return `<article class="np-mobile-record-card" data-production-material>
+        <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(line.description)}</strong><span>${escapeHtml(line.skuCode)}</span></div><span class="np-order-status">${escapeHtml(batch.status)}</span></div>
+        <div class="np-mobile-record-grid">
+          <div class="np-mobile-record-metric"><span>Required</span><strong>${formatQuantity(requiredContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Factory stock</span><strong>${formatQuantity(factoryContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Production area</span><strong>${formatQuantity(productionContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Base needed</span><strong>${formatQuantity(requiredBaseQty)} ${escapeHtml(line.baseUnit)}</strong></div>
+        </div>
+        <label class="np-field"><span>${isInProgress ? "Consumed quantity" : "Transfer quantity"}</span><span class="np-inline-number"><input type="number" min="0" step="${isDraft ? "1" : "0.01"}" value="${value}" ${attribute} data-base-per-container="${basePerContainer}" data-planned-base="${requiredBaseQty}" data-factory-on-hand-base="${factoryBaseQty}" data-production-on-hand-base="${productionBaseQty}" ${isDraft || isInProgress ? "" : "disabled"}><span>${escapeHtml(line.containerUnit)}</span></span></label>
+      </article>`;
     }).join("");
 
     document.querySelectorAll("[data-production-transfer]").forEach((input) => {
@@ -892,6 +923,7 @@ window.NextPulse.production = (() => {
 
   function buildPreparePayload() {
     const lines = Array.from(document.querySelectorAll("[data-production-transfer]"))
+      .filter((input) => input.offsetParent !== null)
       .map((input) => ({
         batchMaterialId: input.dataset.productionTransfer,
         transferContainerQuantity: packageInputQuantity(input)
@@ -904,6 +936,7 @@ window.NextPulse.production = (() => {
 
   function buildCompletePayload() {
     const lines = Array.from(document.querySelectorAll("[data-production-consume]"))
+      .filter((input) => input.offsetParent !== null)
       .map((input) => ({
         batchMaterialId: input.dataset.productionConsume,
         consumedContainerQuantity: Number(input.value || 0)

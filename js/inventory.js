@@ -471,6 +471,7 @@ window.NextPulse.inventory = (() => {
 
   function render() {
     const body = document.getElementById("inventoryTableBody");
+    const mobileList = document.getElementById("inventoryMobileList");
     const count = document.getElementById("inventoryCount");
 
     if (!body) {
@@ -485,6 +486,7 @@ window.NextPulse.inventory = (() => {
 
     if (filtered.length === 0) {
       body.innerHTML = `<tr><td colspan="6" class="np-empty-cell">No inventory rows found.</td></tr>`;
+      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">No inventory items found.</div>`;
       updateColumnVisibility();
       return;
     }
@@ -526,6 +528,25 @@ window.NextPulse.inventory = (() => {
         </td>
       </tr>
     `).join("");
+
+    if (mobileList) {
+      mobileList.innerHTML = filtered.map((item) => `
+        <article class="np-mobile-record-card" data-inventory-item="${escapeHtml(getItemKey(item))}">
+          <div class="np-mobile-record-head">
+            <div class="np-mobile-record-title"><strong>${escapeHtml(item.description || "")}</strong><span>${escapeHtml(item.skuCode || "")}</span></div>
+            ${renderThumb(item)}
+          </div>
+          <p class="np-mobile-record-copy">${escapeHtml(formatLocationSummary(item))} · ${escapeHtml(item.categoryCode || "")}</p>
+          <div class="np-mobile-record-grid">
+            <div class="np-mobile-record-metric"><span>Package stock</span><strong>${formatQuantityForUnit(getPackQuantity(item), getPackUnit(item))} ${escapeHtml(getPackUnit(item))}</strong></div>
+            <div class="np-mobile-record-metric"><span>Base stock</span><strong>${formatQuantityForUnit(item.currentBaseQuantity, getBaseUnit(item))} ${escapeHtml(getBaseUnit(item))}</strong></div>
+          </div>
+          <div class="np-mobile-record-actions">
+            <button class="np-primary-button" type="button" data-inventory-action="receive" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-inboxes"></i> Receive</button>
+            <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="details" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-layout-sidebar-reverse"></i> Details</button>
+          </div>
+        </article>`).join("");
+    }
 
     updateColumnVisibility();
   }
@@ -846,6 +867,15 @@ window.NextPulse.inventory = (() => {
       }
 
       openDrawer(item);
+    });
+
+    document.getElementById("inventoryMobileList")?.addEventListener("click", (event) => {
+      const actionButton = event.target.closest("[data-inventory-action]");
+      const card = event.target.closest("[data-inventory-item]");
+      const item = findItemByKey(actionButton?.dataset.itemKey || card?.dataset.inventoryItem);
+      if (!item) return;
+      if (actionButton?.dataset.inventoryAction === "receive") receiveItem(item);
+      else openDrawer(item);
     });
 
     document.addEventListener("keydown", (event) => {

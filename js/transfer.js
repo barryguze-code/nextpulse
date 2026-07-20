@@ -498,6 +498,7 @@ window.NextPulse.transfer = (() => {
 
   function renderLines() {
     const body = document.getElementById("transferLineBody");
+    const mobileList = document.getElementById("transferMobileList");
     const postButton = document.getElementById("postTransfer");
     const lineCount = document.getElementById("transferLineCount");
     const totalPallets = document.getElementById("transferTotalPallets");
@@ -529,6 +530,7 @@ window.NextPulse.transfer = (() => {
 
     if (lines.length === 0) {
       body.innerHTML = `<tr><td colspan="8" class="np-empty-cell">No transfer lines added.</td></tr>`;
+      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">No transfer lines added.</div>`;
       return;
     }
 
@@ -548,6 +550,17 @@ window.NextPulse.transfer = (() => {
         </td>
       </tr>
     `).join("");
+
+    if (mobileList) mobileList.innerHTML = lines.map((line, index) => `
+      <article class="np-mobile-record-card">
+        <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(line.description)}</strong><span>${escapeHtml(line.skuCode)}</span></div><button class="np-row-action" type="button" data-remove-transfer-line="${index}" aria-label="Remove line"><i class="bi bi-trash"></i></button></div>
+        <p class="np-mobile-record-copy">${escapeHtml(locationLabel(line.fromLocationCode))} <i class="bi bi-arrow-right"></i> ${escapeHtml(locationLabel(line.toLocationCode))}</p>
+        <div class="np-mobile-record-grid">
+          <div class="np-mobile-record-metric"><span>Transfer</span><strong>${escapeHtml(line.summary)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Base quantity</span><strong>${formatQuantity(line.baseQuantity, line.baseUnit)} ${escapeHtml(line.baseUnit)}</strong></div>
+        </div>
+        ${line.notes ? `<p class="np-mobile-record-copy">${escapeHtml(line.notes)}</p>` : ""}
+      </article>`).join("");
   }
 
   function buildPayload() {

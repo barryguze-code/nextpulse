@@ -244,6 +244,7 @@ window.NextPulse.receiving = (() => {
 
   function renderLines() {
     const body = document.getElementById("receivingLineBody");
+    const mobileList = document.getElementById("receivingMobileList");
     const postButton = document.getElementById("postReceiving");
     const lineCount = document.getElementById("receivingLineCount");
     const totalPackages = document.getElementById("receivingTotalPackages");
@@ -275,6 +276,7 @@ window.NextPulse.receiving = (() => {
 
     if (lines.length === 0) {
       body.innerHTML = `<tr><td colspan="9" class="np-empty-cell">No receiving lines added.</td></tr>`;
+      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">No receiving lines added.</div>`;
       return;
     }
 
@@ -295,6 +297,16 @@ window.NextPulse.receiving = (() => {
         </td>
       </tr>
     `).join("");
+
+    if (mobileList) mobileList.innerHTML = lines.map((line, index) => `
+      <article class="np-mobile-record-card">
+        <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(line.description)}</strong><span>${escapeHtml(line.skuCode)}</span></div><button class="np-row-action" type="button" data-remove-receiving-line="${index}" aria-label="Remove line"><i class="bi bi-trash"></i></button></div>
+        <p class="np-mobile-record-copy">${escapeHtml(reasonLabels[line.reasonCode] || line.reasonCode)}${line.notes ? ` · ${escapeHtml(line.notes)}` : ""}</p>
+        <div class="np-mobile-record-grid">
+          <div class="np-mobile-record-metric"><span>Packages</span><strong>${formatQuantity(line.packageQuantity)} ${escapeHtml(line.packageUnit)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Base quantity</span><strong>${formatQuantity(line.baseQuantity)} ${escapeHtml(line.baseUnit)}</strong></div>
+        </div>
+      </article>`).join("");
   }
 
   function clearLineInputs() {
