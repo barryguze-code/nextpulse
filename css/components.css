@@ -612,6 +612,7 @@
 .np-table-wrap {
   overflow: auto;
   border-top: 1px solid var(--np-border);
+  -webkit-overflow-scrolling: touch;
 }
 
 .np-table-wrap-spaced {
@@ -1693,6 +1694,26 @@
 }
 
 @media (max-width: 767.98px) {
+  .np-icon-button,
+  .np-language-button,
+  .np-user-button {
+    min-width: 42px;
+    height: 42px;
+    font-size: 1.08rem;
+  }
+
+  .np-user-button {
+    gap: 8px;
+  }
+
+  .np-user-button .np-user-meta {
+    display: none;
+  }
+
+  .np-brand-logo-compact {
+    width: 94px;
+  }
+
   .np-global-search {
     display: none;
   }
@@ -1701,11 +1722,20 @@
     align-items: flex-start;
     flex-direction: column;
     min-height: auto;
-    padding: 22px;
+    padding: 20px;
   }
 
   .np-hero h1 {
-    font-size: clamp(1.65rem, 7vw, 2.05rem);
+    font-size: clamp(1.55rem, 7vw, 1.95rem);
+  }
+
+  .np-hero-copy {
+    font-size: 0.95rem;
+  }
+
+  .np-module-card {
+    min-height: 88px;
+    padding: 14px;
   }
 
   .np-module-grid,
@@ -1714,25 +1744,31 @@
   }
 
   .np-panel {
-    padding: 18px;
+    overflow: hidden;
+    padding: 18px 16px;
   }
 
   .np-panel-header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 14px;
   }
 
   .np-panel-actions {
+    display: grid;
+    grid-template-columns: 1fr;
     width: 100%;
   }
 
   .np-panel-actions > * {
-    flex: 1 1 auto;
+    width: 100%;
+    min-height: 44px;
     min-width: 0;
   }
 
-  .np-panel-actions .np-primary-button {
-    flex: 2 1 160px;
+  .np-panel-actions .np-primary-button,
+  .np-panel-actions .btn {
+    justify-content: center;
   }
 
   .np-form-grid {
@@ -1748,6 +1784,48 @@
   .np-filter-select,
   .np-toggle {
     width: 100%;
+    min-height: 44px;
+  }
+
+  .np-filter-select {
+    font-size: 0.95rem;
+  }
+
+  .np-toolbar-meta {
+    width: 100%;
+    min-height: 30px;
+  }
+
+  .np-table-wrap {
+    margin-right: -16px;
+    margin-left: -16px;
+    padding: 0 16px 8px;
+    border-top: 0;
+  }
+
+  .np-table-wrap::before {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--np-text-muted);
+    font-size: 0.76rem;
+    content: "Swipe table horizontally";
+  }
+
+  .np-table {
+    min-width: 760px;
+  }
+
+  .np-inventory-table {
+    min-width: 720px;
+  }
+
+  .np-production-table {
+    min-width: 860px;
+  }
+
+  .np-table th,
+  .np-table td {
+    padding: 11px 9px;
   }
 
   .np-workflow {

@@ -74,12 +74,12 @@
   }
 
   .np-main {
-    grid-template-rows: 60px minmax(0, 1fr);
+    grid-template-rows: 72px minmax(0, 1fr);
   }
 
   .np-header {
-    min-height: 60px;
-    padding: 0 16px;
+    min-height: 72px;
+    padding: 0 22px;
   }
 
   .np-sidebar {
@@ -100,6 +100,20 @@
   }
 
   .np-content {
-    padding: 12px 16px 28px;
+    padding: 16px 16px max(34px, env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 575.98px) {
+  .np-header {
+    padding: 0 18px;
+  }
+
+  .np-header-actions {
+    gap: 14px;
+  }
+
+  .np-content {
+    padding: 14px 14px max(34px, env(safe-area-inset-bottom));
   }
 }
