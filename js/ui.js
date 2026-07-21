@@ -9,6 +9,34 @@ window.NextPulse.ui = (() => {
   let currentPage = "home";
   let dialogResolver = null;
   let dialogPreviousFocus = null;
+  const pageFocusTargets = {
+    inventory: "inventorySearch",
+    receiving: "receivingSkuSearch",
+    production: "productionRecipe",
+    transfers: "transferSkuSearch",
+    orders: "ordersSearch"
+  };
+  const pageLabels = {
+    home: "Home",
+    inventory: "Inventory",
+    receiving: "Receiving",
+    production: "Manufacturing",
+    transfers: "Move Stock",
+    orders: "Orders & Deliveries"
+  };
+  const shortcutRegistry = {
+    inventory: [
+      { page: "receiving", title: "Receiving", label: "Receive stock", icon: "bi-inboxes" },
+      { page: "transfers", title: "Transfers", label: "Move stock", icon: "bi-arrow-left-right" }
+    ],
+    receiving: [{ page: "inventory", title: "Inventory", label: "Check stock", icon: "bi-box-seam" }],
+    production: [{ page: "inventory", title: "Inventory", label: "Check stock", icon: "bi-box-seam" }],
+    transfers: [
+      { page: "inventory", title: "Inventory", label: "Check stock", icon: "bi-box-seam" },
+      { page: "receiving", title: "Receiving", label: "Receive stock", icon: "bi-inboxes" }
+    ],
+    orders: [{ page: "production", title: "Production", label: "Make cookies", icon: "bi-play-circle" }]
+  };
 
   function setupSidebar() {
     const app = document.getElementById("npApp");
@@ -258,6 +286,7 @@ window.NextPulse.ui = (() => {
 
   function showPage(page, pageTitle) {
     const titleElement = document.getElementById("pageTitle");
+    const displayTitle = pageLabels[page] || pageTitle || "Workspace";
     currentPage = page;
 
     document.getElementById("sidebar")?.classList.remove("is-open");
@@ -270,15 +299,79 @@ window.NextPulse.ui = (() => {
 
     updateActiveNavigation();
 
-    if (titleElement && pageTitle) {
-      titleElement.textContent = pageTitle;
+    if (titleElement) {
+      titleElement.textContent = displayTitle;
     }
+
+    updateContextBar(page, displayTitle);
 
     document.dispatchEvent(new CustomEvent("nextpulse:page-change", {
       detail: {
         page
       }
     }));
+
+    window.setTimeout(() => {
+      const target = document.getElementById(pageFocusTargets[page]);
+      if (target && !target.disabled) target.focus({ preventScroll: true });
+    }, 120);
+  }
+
+  function updateContextBar(page, pageTitle) {
+    const bar = document.getElementById("npContextBar");
+    const pageElement = document.getElementById("npBreadcrumbPage");
+    const shortcuts = document.getElementById("npSmartShortcuts");
+    if (!bar || !pageElement || !shortcuts) return;
+    bar.hidden = page === "home";
+    pageElement.textContent = pageTitle || "Workspace";
+    setPageContext("");
+    shortcuts.innerHTML = (shortcutRegistry[page] || []).map((item) => `
+      <a href="#" data-page="${item.page}" data-page-title="${item.title}"><i class="bi ${item.icon}"></i><span>${item.label}</span></a>
+    `).join("");
+  }
+
+  function setPageContext(label = "", page = "") {
+    if (page && page !== currentPage) return;
+    const wrap = document.getElementById("npBreadcrumbContextWrap");
+    const context = document.getElementById("npBreadcrumbContext");
+    if (!wrap || !context) return;
+    context.textContent = label;
+    wrap.hidden = !label;
+  }
+
+  function clearFieldError(field) {
+    if (!field) return;
+    field.classList.remove("is-invalid");
+    field.removeAttribute("aria-invalid");
+    field.removeAttribute("aria-describedby");
+    const errorId = `${field.id || "np-field"}-error`;
+    document.getElementById(errorId)?.remove();
+  }
+
+  function focusFieldError(field, message) {
+    if (!field) return false;
+    clearFieldError(field);
+    field.classList.add("is-invalid");
+    field.setAttribute("aria-invalid", "true");
+    const error = document.createElement("span");
+    error.className = "np-field-error";
+    error.id = `${field.id || "np-field"}-error`;
+    error.innerHTML = `<i class="bi bi-exclamation-circle-fill"></i><span>${message}</span>`;
+    field.setAttribute("aria-describedby", error.id);
+    const container = field.closest(".np-field") || field.parentElement;
+    container?.appendChild(error);
+    field.focus({ preventScroll: true });
+    field.scrollIntoView({ behavior: "smooth", block: "center" });
+    return false;
+  }
+
+  function setupValidationCleanup() {
+    document.addEventListener("input", (event) => {
+      if (event.target.matches("input, select, textarea")) clearFieldError(event.target);
+    });
+    document.addEventListener("change", (event) => {
+      if (event.target.matches("input, select, textarea")) clearFieldError(event.target);
+    });
   }
 
   function updateActiveNavigation() {
@@ -408,11 +501,15 @@ window.NextPulse.ui = (() => {
     setupHealthCheck();
     setupLogout();
     setupDialog();
+    setupValidationCleanup();
   }
 
   return {
     init,
     showPage,
-    confirmAction
+    confirmAction,
+    setPageContext,
+    focusFieldError,
+    clearFieldError
   };
 })();

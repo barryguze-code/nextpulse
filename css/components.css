@@ -7,6 +7,56 @@
   text-transform: uppercase;
 }
 
+/* Navigation context, batch content, and validation */
+.np-context-bar { min-height:52px; display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:12px; padding:8px 12px; background:rgba(255,255,255,.86); border:1px solid var(--np-border); border-radius:14px; backdrop-filter:blur(14px); }
+.np-breadcrumbs,.np-breadcrumbs a,.np-breadcrumbs>span,.np-breadcrumbs>span>span,.np-smart-shortcuts { min-width:0; display:flex; align-items:center; gap:7px; }
+.np-breadcrumbs { overflow:hidden; color:var(--np-text-muted); font-size:.84rem; }
+.np-breadcrumbs a { color:var(--np-text-soft); font-weight:680; }
+.np-breadcrumbs>i,.np-breadcrumbs>span>i { color:#9aa9bc; font-size:.7rem; }
+.np-breadcrumbs strong,#npBreadcrumbPage { overflow:hidden; color:var(--np-text); font-weight:740; text-overflow:ellipsis; white-space:nowrap; }
+.np-smart-shortcuts a { min-height:34px; display:inline-flex; align-items:center; gap:7px; padding:0 10px; color:var(--np-text-soft); font-size:.78rem; font-weight:700; white-space:nowrap; background:#fff; border:1px solid var(--np-border); border-radius:10px; }
+.np-smart-shortcuts a i { color:var(--np-accent); }
+
+.np-production-content-card { display:grid; gap:16px; margin-bottom:16px; padding:18px; background:linear-gradient(135deg,#fff 0%,#f7f8ff 100%); border:1px solid rgba(99,91,255,.2); border-radius:18px; box-shadow:0 9px 28px rgba(24,37,59,.06); }
+.np-production-content-heading { display:flex; align-items:center; justify-content:space-between; gap:14px; }
+.np-production-content-heading h3 { margin:4px 0 0; font-size:1.15rem; }
+.np-production-content-grid { display:grid; grid-template-columns:minmax(0,1.5fr) minmax(180px,.8fr) minmax(170px,.7fr); gap:12px; }
+.np-quantity-stepper { min-height:48px; display:grid; grid-template-columns:46px minmax(0,1fr) 46px; overflow:hidden; background:#fff; border:1px solid var(--np-border-strong); border-radius:11px; }
+.np-quantity-stepper button { display:grid; place-items:center; color:var(--np-accent); background:var(--np-accent-soft); border:0; }
+.np-quantity-stepper button:first-child { border-right:1px solid var(--np-border); }
+.np-quantity-stepper button:last-child { border-left:1px solid var(--np-border); }
+.np-field .np-quantity-stepper input { min-height:46px; text-align:center; border:0; border-radius:0; box-shadow:none; }
+.np-quantity-stepper:focus-within { border-color:var(--np-accent); box-shadow:0 0 0 3px rgba(99,91,255,.1); }
+.np-production-content-lock { margin:0; padding:10px 12px; color:var(--np-text-muted); font-size:.82rem; background:var(--np-surface-2); border-radius:10px; }
+.np-production-content-lock i { margin-right:6px; color:var(--np-accent); }
+
+.np-field input.is-invalid,.np-field select.is-invalid,.np-receiving-search input.is-invalid { border-color:var(--np-danger)!important; box-shadow:0 0 0 3px rgba(223,27,65,.1)!important; }
+.np-receiving-search:has(input.is-invalid) { border-color:var(--np-danger); box-shadow:0 0 0 3px rgba(223,27,65,.1); }
+.np-receiving-search input.is-invalid { border:0!important; box-shadow:none!important; }
+.np-field-error { display:flex!important; align-items:flex-start; gap:6px; color:#a31332!important; font-size:.78rem!important; font-weight:680!important; line-height:1.35; }
+.np-field-error i { margin-top:1px; color:var(--np-danger); }
+.np-production-panel { display:flex; flex-direction:column; }
+.np-production-panel>.np-panel-header { order:0; }
+.np-production-panel>.np-panel-top-alert { order:1; }
+.np-production-panel>.np-production-content-card { order:2; }
+.np-production-panel>.np-workflow { order:3; }
+.np-production-panel>.np-workspace-grid { order:4; }
+.np-production-panel>.np-recent-batches { order:5; }
+.np-production-panel>.np-table-wrap,.np-production-panel>.np-mobile-record-list { order:6; }
+
+@media (max-width:767.98px) {
+  .np-context-bar { align-items:stretch; flex-direction:column; margin:-2px 0 12px; padding:10px 12px; }
+  .np-breadcrumbs { min-height:28px; }
+  .np-breadcrumbs a span { display:none; }
+  .np-smart-shortcuts { overflow-x:auto; padding-bottom:1px; }
+  .np-smart-shortcuts a { min-height:40px; }
+  .np-production-content-card { padding:15px; border-radius:17px; }
+  .np-production-content-grid { grid-template-columns:1fr; }
+  .np-production-content-grid .np-field input,.np-production-content-grid .np-field select { min-height:52px; font-size:1rem; }
+  .np-quantity-stepper { min-height:52px; grid-template-columns:52px minmax(0,1fr) 52px; }
+  .np-quantity-stepper button { font-size:1.15rem; }
+}
+
 .np-brand {
   display: grid;
   gap: 2px;

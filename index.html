@@ -11,7 +11,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="css/theme.css?v=20260719-3" rel="stylesheet">
   <link href="css/layout.css?v=20260719-3" rel="stylesheet">
-  <link href="css/components.css?v=20260721-7" rel="stylesheet">
+  <link href="css/components.css?v=20260721-8" rel="stylesheet">
   <link href="css/app.css?v=20260719-3" rel="stylesheet">
   <link href="css/orders.css?v=20260720-2" rel="stylesheet">
 </head>
@@ -23,6 +23,15 @@
       <div data-component="header"></div>
 
       <main class="np-content" id="mainContent" tabindex="-1">
+        <div class="np-context-bar" id="npContextBar" hidden>
+          <nav class="np-breadcrumbs" aria-label="Breadcrumb">
+            <a href="#" data-page="home" data-page-title="Home"><i class="bi bi-house"></i><span>Home</span></a>
+            <i class="bi bi-chevron-right" aria-hidden="true"></i>
+            <span id="npBreadcrumbPage">Workspace</span>
+            <span id="npBreadcrumbContextWrap" hidden><i class="bi bi-chevron-right" aria-hidden="true"></i><strong id="npBreadcrumbContext"></strong></span>
+          </nav>
+          <div class="np-smart-shortcuts" id="npSmartShortcuts" aria-label="Suggested actions"></div>
+        </div>
         <div data-page-panel="home">
         <section class="np-mobile-operations" aria-labelledby="mobileOperationsTitle">
           <div class="np-mobile-welcome">
@@ -269,8 +278,36 @@
 
           <div class="np-alert np-panel-top-alert" id="productionTopMessage" hidden></div>
 
+          <section class="np-production-content-card" aria-labelledby="productionContentTitle">
+            <div class="np-production-content-heading">
+              <div><p class="np-kicker">Batch content</p><h3 id="productionContentTitle">What are you making?</h3></div>
+              <span class="np-batch-status is-draft" id="productionContentStatus">New batch</span>
+            </div>
+            <div class="np-production-content-grid">
+              <label class="np-field">
+                <span>Cookie / Recipe</span>
+                <select id="productionRecipe" form="productionForm" required>
+                  <option value="">Loading recipes...</option>
+                </select>
+              </label>
+              <label class="np-field">
+                <span>Cookie quantity</span>
+                <span class="np-quantity-stepper">
+                  <button type="button" data-production-quantity-step="-1" aria-label="Decrease cookie quantity"><i class="bi bi-dash-lg"></i></button>
+                  <input type="number" id="productionQuantity" form="productionForm" min="1" step="1" inputmode="numeric" placeholder="Example: 36000" required>
+                  <button type="button" data-production-quantity-step="1" aria-label="Increase cookie quantity"><i class="bi bi-plus-lg"></i></button>
+                </span>
+              </label>
+              <label class="np-field">
+                <span>Production date</span>
+                <input type="date" id="productionDate" form="productionForm" required>
+              </label>
+            </div>
+            <p class="np-production-content-lock" id="productionContentLock" hidden><i class="bi bi-lock-fill"></i> Created batches are locked to protect inventory calculations.</p>
+          </section>
+
           <div class="np-workspace-grid">
-            <form class="np-form-panel" id="productionForm">
+            <form class="np-form-panel" id="productionForm" novalidate>
               <div class="np-form-section">
                 <div>
                   <p class="np-mini-label">New Batch</p>
@@ -282,20 +319,6 @@
                     <select id="productionOpenBatch">
                       <option value="">No open batches loaded</option>
                     </select>
-                  </label>
-                  <label class="np-field np-field-wide">
-                    <span>Product / Recipe</span>
-                    <select id="productionRecipe" required>
-                      <option value="">Loading recipes...</option>
-                    </select>
-                  </label>
-                  <label class="np-field">
-                    <span>Production quantity</span>
-                    <input type="number" id="productionQuantity" min="1" step="1" placeholder="Example: 36000" required>
-                  </label>
-                  <label class="np-field">
-                    <span>Production date</span>
-                    <input type="date" id="productionDate" required>
                   </label>
                   <p class="np-receiving-preview np-field-wide" id="productionPreview">
                     Select recipe and quantity to create a draft batch.
@@ -397,7 +420,7 @@
           </div>
 
           <div class="np-workspace-grid">
-            <form class="np-form-panel" id="transferForm">
+            <form class="np-form-panel" id="transferForm" novalidate>
               <div class="np-form-section">
                 <div>
                   <p class="np-mini-label">Move Stock</p>
@@ -539,7 +562,7 @@
           </div>
 
           <div class="np-workspace-grid">
-            <form class="np-form-panel" id="receivingForm">
+            <form class="np-form-panel" id="receivingForm" novalidate>
               <div class="np-form-section">
                 <div>
                   <p class="np-mini-label">Receive Stock</p>
@@ -792,11 +815,11 @@
   <script src="js/api.js?v=20260719-3"></script>
   <script src="js/auth.js?v=20260719-3"></script>
   <script src="js/component-loader.js?v=20260719-3"></script>
-  <script src="js/ui.js?v=20260721-7"></script>
+  <script src="js/ui.js?v=20260721-8"></script>
   <script src="js/inventory.js?v=20260721-6"></script>
-  <script src="js/receiving.js?v=20260721-6"></script>
-  <script src="js/production.js?v=20260721-7"></script>
-  <script src="js/transfer.js?v=20260721-6"></script>
+  <script src="js/receiving.js?v=20260721-8"></script>
+  <script src="js/production.js?v=20260721-8"></script>
+  <script src="js/transfer.js?v=20260721-8"></script>
   <script src="js/orders.js?v=20260720-2"></script>
   <script src="js/app.js?v=20260720-1"></script>
 </body>

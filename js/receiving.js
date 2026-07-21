@@ -382,6 +382,7 @@ window.NextPulse.receiving = (() => {
 
     if (!item) {
       showMessage("Select a SKU before adding a receiving line.", "error");
+      window.NextPulse.ui.focusFieldError(document.getElementById("receivingSkuSearch"), "Search for and select a material.");
       return;
     }
 
@@ -392,17 +393,19 @@ window.NextPulse.receiving = (() => {
 
     if (!reasonCode) {
       showMessage("Reason is required.", "error");
+      window.NextPulse.ui.focusFieldError(document.getElementById("receivingReason"), "Choose why this stock is being received.");
       return;
     }
 
     if (!Number.isFinite(packageQuantity) || packageQuantity <= 0) {
       showMessage("Package quantity must be greater than zero.", "error");
+      window.NextPulse.ui.focusFieldError(document.getElementById("receivingPackageQty"), "Enter at least one package.");
       return;
     }
 
     if (reasonCode !== "MAL_KABUL" && !notes) {
       showMessage("Notes are required when reason is not Mal Kabul.", "error");
-      document.getElementById("receivingNotes")?.focus();
+      window.NextPulse.ui.focusFieldError(document.getElementById("receivingNotes"), "Explain this inventory adjustment.");
       return;
     }
 

@@ -556,8 +556,24 @@ window.NextPulse.production = (() => {
     const completionFields = document.getElementById("productionCompletionFields");
     const body = document.getElementById("productionMaterialBody");
     const mobileList = document.getElementById("productionMobileList");
+    const recipeInput = document.getElementById("productionRecipe");
+    const quantityInput = document.getElementById("productionQuantity");
+    const dateInput = document.getElementById("productionDate");
+    const contentTitle = document.getElementById("productionContentTitle");
+    const contentStatus = document.getElementById("productionContentStatus");
+    const contentLock = document.getElementById("productionContentLock");
+    const createButton = document.querySelector("#productionForm button[type='submit']");
 
     if (!currentBatch) {
+      [recipeInput, quantityInput, dateInput].forEach((input) => { if (input) input.disabled = false; });
+      if (contentTitle) contentTitle.textContent = "What are you making?";
+      if (contentStatus) {
+        contentStatus.textContent = "New batch";
+        contentStatus.className = "np-batch-status is-draft";
+      }
+      if (contentLock) contentLock.hidden = true;
+      if (createButton) createButton.disabled = false;
+      window.NextPulse.ui.setPageContext("", "production");
       if (title) {
         title.textContent = "No batch yet";
       }
@@ -591,6 +607,20 @@ window.NextPulse.production = (() => {
     const batch = currentBatch.batch;
     const materials = currentBatch.materials || [];
     const suggestedLines = materials.filter((line) => Number(line.suggestedIssueContainerQuantity || 0) > 0);
+
+    const matchingRecipe = recipes.find((recipe) => recipe.recipeCode === batch.recipeCode || recipe.recipeName === batch.recipeName);
+    if (recipeInput && matchingRecipe) recipeInput.value = matchingRecipe.recipeVersionId;
+    if (quantityInput) quantityInput.value = Number(batch.plannedOutputQuantity || 0);
+    if (dateInput && batch.productionDate) dateInput.value = batch.productionDate;
+    [recipeInput, quantityInput, dateInput].forEach((input) => { if (input) input.disabled = true; });
+    if (contentTitle) contentTitle.textContent = batch.finishedDescription || batch.recipeName || "Production batch";
+    if (contentStatus) {
+      contentStatus.textContent = statusLabel(batch.status);
+      contentStatus.className = `np-batch-status is-${statusClass(batch.status)}`;
+    }
+    if (contentLock) contentLock.hidden = false;
+    if (createButton) createButton.disabled = true;
+    window.NextPulse.ui.setPageContext(batch.batchNumber || "Current batch", "production");
 
     if (title) {
       title.textContent = batch.batchNumber || "Draft batch";
@@ -773,6 +803,7 @@ window.NextPulse.production = (() => {
       hasLoaded = true;
       renderRecipeOptions();
       updatePreview();
+      if (currentBatch) renderBatch();
     } catch (exception) {
       const select = document.getElementById("productionRecipe");
       if (select) {
@@ -791,11 +822,19 @@ window.NextPulse.production = (() => {
 
     if (!recipe) {
       showMessage("Select a product / recipe.", "error");
+      window.NextPulse.ui.focusFieldError(document.getElementById("productionRecipe"), "Choose the cookie or recipe for this batch.");
       return;
     }
 
     if (!quantity || quantity <= 0) {
       showMessage("Production quantity must be greater than zero.", "error");
+      window.NextPulse.ui.focusFieldError(document.getElementById("productionQuantity"), "Enter at least one cookie.");
+      return;
+    }
+
+    if (!document.getElementById("productionDate")?.value) {
+      showMessage("Production date is required.", "error");
+      window.NextPulse.ui.focusFieldError(document.getElementById("productionDate"), "Choose the production date.");
       return;
     }
 
@@ -975,6 +1014,17 @@ window.NextPulse.production = (() => {
       updatePreview();
     });
     document.getElementById("productionQuantity")?.addEventListener("input", updatePreview);
+    document.querySelectorAll("[data-production-quantity-step]").forEach((button) => {
+      button.addEventListener("click", () => {
+        const input = document.getElementById("productionQuantity");
+        if (!input || input.disabled) return;
+        const step = Number(button.dataset.productionQuantityStep || 0);
+        input.value = String(Math.max(1, Math.trunc(numericValue(input.value)) + step));
+        input.dispatchEvent(new Event("input", { bubbles: true }));
+        input.focus();
+        input.select();
+      });
+    });
     document.getElementById("productionGoodQuantity")?.addEventListener("input", () => showMessage(""));
     document.getElementById("productionWasteQuantity")?.addEventListener("input", () => showMessage(""));
     document.getElementById("productionOpenBatch")?.addEventListener("change", (event) => {

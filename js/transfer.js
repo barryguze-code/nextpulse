@@ -518,11 +518,56 @@ window.NextPulse.transfer = (() => {
     event.preventDefault();
     showMessage("");
 
-    const line = buildLine();
     const item = selectedItem();
+    const from = document.getElementById("transferFromLocation");
+    const to = document.getElementById("transferToLocation");
+
+    if (!item) {
+      showMessage("Choose a material before adding the transfer.", "error");
+      window.NextPulse.ui.focusFieldError(document.getElementById("transferSkuSearch"), "Search for and select a material.");
+      return;
+    }
+    if (!from?.value) {
+      showMessage("Choose where the stock is moving from.", "error");
+      window.NextPulse.ui.focusFieldError(from, "Choose the source location.");
+      return;
+    }
+    if (!to?.value) {
+      showMessage("Choose where the stock is moving to.", "error");
+      window.NextPulse.ui.focusFieldError(to, "Choose the destination location.");
+      return;
+    }
+    if (from.value === to.value) {
+      showMessage("Source and destination must be different.", "error");
+      window.NextPulse.ui.focusFieldError(to, "Choose a different destination.");
+      return;
+    }
+
+    const quantityField = document.getElementById(isFinishedSelected() ? "transferPalletQty" : "transferPackageQty");
+    if (!Number.isFinite(Number(quantityField?.value)) || Number(quantityField?.value) <= 0) {
+      showMessage("Transfer quantity must be greater than zero.", "error");
+      window.NextPulse.ui.focusFieldError(quantityField, "Enter at least one package or pallet.");
+      return;
+    }
+
+    if (isFinishedSelected()) {
+      const finishedFields = [
+        [document.getElementById("transferBoxesPerPallet"), "Enter at least one box per pallet."],
+        [document.getElementById("transferUnitsPerBox"), "Enter at least one unit per box."]
+      ];
+      const invalid = finishedFields.find(([field]) => !Number.isFinite(Number(field?.value)) || Number(field?.value) <= 0);
+      if (invalid) {
+        showMessage("Pallet, box, and unit quantities must all be greater than zero.", "error");
+        window.NextPulse.ui.focusFieldError(invalid[0], invalid[1]);
+        return;
+      }
+    }
+
+    const line = buildLine();
 
     if (!line || !item) {
       showMessage("Complete SKU, locations, and quantity before adding a transfer line.", "error");
+      window.NextPulse.ui.focusFieldError(quantityField, "Check all quantity values before adding this line.");
       return;
     }
 
