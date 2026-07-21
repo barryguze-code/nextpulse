@@ -16,10 +16,16 @@ window.NextPulse.ui = (() => {
     const closeButtons = document.querySelectorAll("[data-sidebar-close]");
     const collapseButtons = document.querySelectorAll("[data-sidebar-collapse]");
 
-    if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true") {
+    if (localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true" && !window.matchMedia("(max-width: 991.98px)").matches) {
       app?.classList.add("is-sidebar-collapsed");
       updateCollapseButtons(true);
     }
+
+    window.matchMedia("(max-width: 991.98px)").addEventListener("change", (event) => {
+      const shouldCollapse = !event.matches && localStorage.getItem(SIDEBAR_COLLAPSED_KEY) === "true";
+      app?.classList.toggle("is-sidebar-collapsed", shouldCollapse);
+      updateCollapseButtons(shouldCollapse);
+    });
 
     const open = () => {
       sidebar?.classList.add("is-open");
@@ -251,6 +257,10 @@ window.NextPulse.ui = (() => {
   function showPage(page, pageTitle) {
     const titleElement = document.getElementById("pageTitle");
     currentPage = page;
+
+    document.getElementById("sidebar")?.classList.remove("is-open");
+    const backdrop = document.getElementById("sidebarBackdrop");
+    if (backdrop) backdrop.hidden = true;
 
     document.querySelectorAll("[data-page-panel]").forEach((panel) => {
       panel.hidden = panel.dataset.pagePanel !== page;
