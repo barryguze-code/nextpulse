@@ -26,17 +26,7 @@ window.NextPulse.inventory = (() => {
   }
 
   function isWholeUnit(unit) {
-    return [
-      "ADET",
-      "AD",
-      "KOLI",
-      "KOLİ",
-      "TORBA",
-      "RULO",
-      "PAKET",
-      "PALET",
-      "BALYA"
-    ].includes(String(unit || "").trim().toUpperCase());
+    return ["ADET", "AD", "PALET"].includes(String(unit || "").trim().toUpperCase());
   }
 
   function formatQuantityForUnit(value, unit) {
@@ -124,6 +114,26 @@ window.NextPulse.inventory = (() => {
     };
   }
 
+  function getMeasurements(item) {
+    const packQuantity = getPackQuantity(item);
+    const measurements = [{ quantity: packQuantity, unit: getPackUnit(item) }];
+    const innerUnit = getInnerUnit(item);
+    const innerQty = getInnerQtyPerPack(item);
+    if (innerUnit && innerUnit !== getPackUnit(item) && innerQty > 0) {
+      measurements.push({ quantity: packQuantity * innerQty, unit: innerUnit });
+    }
+    if (getBaseUnit(item) && !measurements.some((entry) => entry.unit === getBaseUnit(item))) {
+      measurements.push({ quantity: Number(item.currentBaseQuantity || 0), unit: getBaseUnit(item) });
+    }
+    return measurements.filter((entry) => entry.unit);
+  }
+
+  function renderMeasurements(item) {
+    return `<div class="np-inventory-measurements">${getMeasurements(item).map((entry) =>
+      `<span><strong>${formatQuantityForUnit(entry.quantity, entry.unit)}</strong> ${escapeHtml(entry.unit)}</span>`
+    ).join(`<i class="bi bi-dot"></i>`)}</div>`;
+  }
+
   function getItemKey(item) {
     return item.skuCode || item.itemCode || "";
   }
@@ -170,6 +180,9 @@ window.NextPulse.inventory = (() => {
         return group;
       })
       .sort((left, right) => {
+        const leftFinished = left.categoryCode === "FINISHED_GOOD" ? 0 : 1;
+        const rightFinished = right.categoryCode === "FINISHED_GOOD" ? 0 : 1;
+        if (leftFinished !== rightFinished) return leftFinished - rightFinished;
         const descriptionCompare = String(left.description || "").localeCompare(String(right.description || ""));
         return descriptionCompare || String(left.skuCode || "").localeCompare(String(right.skuCode || ""));
       });
@@ -537,12 +550,10 @@ window.NextPulse.inventory = (() => {
             ${renderThumb(item)}
           </div>
           <p class="np-mobile-record-copy">${escapeHtml(formatLocationSummary(item))} · ${escapeHtml(item.categoryCode || "")}</p>
-          <div class="np-mobile-record-grid">
-            <div class="np-mobile-record-metric"><span>Package stock</span><strong>${formatQuantityForUnit(getPackQuantity(item), getPackUnit(item))} ${escapeHtml(getPackUnit(item))}</strong></div>
-            <div class="np-mobile-record-metric"><span>Base stock</span><strong>${formatQuantityForUnit(item.currentBaseQuantity, getBaseUnit(item))} ${escapeHtml(getBaseUnit(item))}</strong></div>
-          </div>
+          ${renderMeasurements(item)}
           <div class="np-mobile-record-actions">
             <button class="np-primary-button" type="button" data-inventory-action="receive" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-inboxes"></i> Receive</button>
+            <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="adjust" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-box-arrow-up-right"></i> Use</button>
             <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="details" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-layout-sidebar-reverse"></i> Details</button>
           </div>
         </article>`).join("");
@@ -748,6 +759,77 @@ window.NextPulse.inventory = (() => {
     }
   }
 
+  function updateAdjustmentPreview() {
+    if (!selectedItem) return;
+    const locationCode = document.getElementById("inventoryAdjustmentLocation")?.value;
+    const row = getLocationRows(selectedItem).find((entry) => entry.locationCode === locationCode);
+    const mode = document.getElementById("inventoryAdjustmentMode")?.value;
+    const quantity = Number(document.getElementById("inventoryAdjustmentQuantity")?.value || 0);
+    const reason = document.querySelector("input[name='inventoryReason']:checked")?.value;
+    const unit = mode === "BASE" ? getBaseUnit(selectedItem) : getPackUnit(selectedItem);
+    const quantityInput = document.getElementById("inventoryAdjustmentQuantity");
+    quantityInput.step = isWholeUnit(unit) ? "1" : "0.01";
+    const current = mode === "BASE" ? Number(row?.currentBaseQuantity || 0) : getPackQuantity(row || selectedItem);
+    document.getElementById("inventoryAdjustmentQuantityLabel").textContent = reason === "PHYSICAL_COUNT" ? "Counted quantity" : "Quantity";
+    document.getElementById("inventoryAdjustmentPreview").textContent = reason === "PHYSICAL_COUNT"
+      ? `Current: ${formatQuantityForUnit(current, unit)} ${unit}. Enter the total physically counted.`
+      : `Available here: ${formatQuantityForUnit(current, unit)} ${unit}${quantity ? ` · After: ${formatQuantityForUnit(Math.max(0, current - quantity), unit)} ${unit}` : ""}`;
+  }
+
+  function openAdjustment(item) {
+    selectedItem = item;
+    if (!item) return;
+    const sheet = document.getElementById("inventoryAdjustmentSheet");
+    document.getElementById("inventoryAdjustmentTitle").textContent = item.description || item.skuCode;
+    document.getElementById("inventoryAdjustmentLocation").innerHTML = getLocationRows(item).map((row) =>
+      `<option value="${escapeHtml(row.locationCode)}">${escapeHtml(row.locationName || row.locationCode)}</option>`
+    ).join("");
+    document.getElementById("inventoryAdjustmentMode").innerHTML = `
+      <option value="CONTAINER">${escapeHtml(getPackUnit(item))}</option>
+      <option value="BASE">${escapeHtml(getBaseUnit(item))}</option>`;
+    document.getElementById("inventoryAdjustmentQuantity").value = "";
+    document.getElementById("inventoryAdjustmentNote").value = "";
+    sheet.hidden = false;
+    sheet.setAttribute("aria-hidden", "false");
+    updateAdjustmentPreview();
+    window.setTimeout(() => document.getElementById("inventoryAdjustmentQuantity")?.focus(), 0);
+  }
+
+  function closeAdjustment() {
+    const sheet = document.getElementById("inventoryAdjustmentSheet");
+    sheet.hidden = true;
+    sheet.setAttribute("aria-hidden", "true");
+  }
+
+  async function submitAdjustment(event) {
+    event.preventDefault();
+    const quantity = Number(document.getElementById("inventoryAdjustmentQuantity").value);
+    const note = document.getElementById("inventoryAdjustmentNote").value.trim();
+    if (!Number.isFinite(quantity) || quantity < 0 || !note) return;
+    const reasonCode = document.querySelector("input[name='inventoryReason']:checked").value;
+    const confirmed = await window.NextPulse.ui.confirmAction({
+      type: reasonCode === "PHYSICAL_COUNT" ? "info" : "warning",
+      kicker: "Inventory ledger",
+      title: reasonCode === "PHYSICAL_COUNT" ? "Post physical count?" : "Reduce inventory?",
+      message: `${selectedItem.description}: ${quantity} ${document.getElementById("inventoryAdjustmentMode").selectedOptions[0].textContent}`,
+      detail: note,
+      confirmLabel: "Post movement"
+    });
+    if (!confirmed) return;
+    await window.NextPulse.api.post("/inventory/adjustments", {
+      skuCode: selectedItem.skuCode,
+      locationCode: document.getElementById("inventoryAdjustmentLocation").value,
+      reasonCode,
+      quantityMode: document.getElementById("inventoryAdjustmentMode").value,
+      quantity,
+      note
+    });
+    closeAdjustment();
+    await load();
+    const refreshed = findItemByKey(selectedItem.skuCode);
+    if (document.getElementById("inventoryDrawer")?.classList.contains("is-open")) openDrawer(refreshed);
+  }
+
   function closeDrawer() {
     const drawer = document.getElementById("inventoryDrawer");
     const backdrop = document.getElementById("inventoryDrawerBackdrop");
@@ -851,6 +933,11 @@ window.NextPulse.inventory = (() => {
     document.getElementById("inventoryDrawerBackdrop")?.addEventListener("click", closeDrawer);
     document.getElementById("inventoryDrawerReceive")?.addEventListener("click", () => receiveItem(selectedItem));
     document.getElementById("inventoryDrawerTransfer")?.addEventListener("click", () => transferItem(selectedItem));
+    document.getElementById("inventoryDrawerAdjust")?.addEventListener("click", () => openAdjustment(selectedItem));
+    document.getElementById("inventoryAdjustmentClose")?.addEventListener("click", closeAdjustment);
+    document.getElementById("inventoryAdjustmentForm")?.addEventListener("submit", (event) => submitAdjustment(event).catch((exception) => window.NextPulse.ui.confirmAction({ type: "danger", kicker: "Could not post", title: "Inventory was not changed", message: exception.message, cancelLabel: "Close", confirmLabel: "Try again" })));
+    ["inventoryAdjustmentLocation", "inventoryAdjustmentMode", "inventoryAdjustmentQuantity"].forEach((id) => document.getElementById(id)?.addEventListener("input", updateAdjustmentPreview));
+    document.querySelectorAll("input[name='inventoryReason']").forEach((input) => input.addEventListener("change", updateAdjustmentPreview));
 
     document.getElementById("inventoryTableBody")?.addEventListener("click", (event) => {
       const actionButton = event.target.closest("[data-inventory-action]");
@@ -868,6 +955,7 @@ window.NextPulse.inventory = (() => {
           receiveItem(item);
           return;
         }
+        if (actionButton.dataset.inventoryAction === "adjust") { openAdjustment(item); return; }
       }
 
       openDrawer(item);
@@ -879,6 +967,7 @@ window.NextPulse.inventory = (() => {
       const item = findItemByKey(actionButton?.dataset.itemKey || card?.dataset.inventoryItem);
       if (!item) return;
       if (actionButton?.dataset.inventoryAction === "receive") receiveItem(item);
+      else if (actionButton?.dataset.inventoryAction === "adjust") openAdjustment(item);
       else openDrawer(item);
     });
 
