@@ -7,6 +7,8 @@ window.NextPulse.ui = (() => {
   const defaultFavoriteKeys = ["inventory"];
   let moduleRegistry = new Map();
   let currentPage = "home";
+  let dialogResolver = null;
+  let dialogPreviousFocus = null;
 
   function setupSidebar() {
     const app = document.getElementById("npApp");
@@ -317,6 +319,87 @@ window.NextPulse.ui = (() => {
     });
   }
 
+  function closeDialog(result) {
+    const layer = document.getElementById("npDialogLayer");
+    if (!layer || layer.hidden) return;
+    layer.hidden = true;
+    layer.setAttribute("aria-hidden", "true");
+    document.body.classList.remove("has-np-dialog");
+    dialogPreviousFocus?.focus?.();
+    const resolve = dialogResolver;
+    dialogResolver = null;
+    dialogPreviousFocus = null;
+    resolve?.(result);
+  }
+
+  function setupDialog() {
+    document.getElementById("npDialogCancel")?.addEventListener("click", () => closeDialog(false));
+    document.getElementById("npDialogConfirm")?.addEventListener("click", () => closeDialog(true));
+    document.getElementById("npDialogLayer")?.addEventListener("click", (event) => {
+      if (event.target.id === "npDialogLayer") closeDialog(false);
+    });
+    document.addEventListener("keydown", (event) => {
+      const layer = document.getElementById("npDialogLayer");
+      if (!layer || layer.hidden) return;
+      if (event.key === "Escape") {
+        event.preventDefault();
+        closeDialog(false);
+      }
+      if (event.key === "Tab") {
+        const buttons = [document.getElementById("npDialogCancel"), document.getElementById("npDialogConfirm")].filter(Boolean);
+        const index = buttons.indexOf(document.activeElement);
+        if (event.shiftKey && index <= 0) {
+          event.preventDefault();
+          buttons.at(-1)?.focus();
+        } else if (!event.shiftKey && index === buttons.length - 1) {
+          event.preventDefault();
+          buttons[0]?.focus();
+        }
+      }
+    });
+  }
+
+  function confirmAction({
+    type = "warning",
+    kicker = "Please confirm",
+    title = "Are you sure?",
+    message = "This action needs confirmation.",
+    detail = "",
+    confirmLabel = "Continue",
+    cancelLabel = "Go back"
+  } = {}) {
+    const layer = document.getElementById("npDialogLayer");
+    if (!layer) return Promise.resolve(false);
+    if (dialogResolver) closeDialog(false);
+
+    const iconMap = {
+      danger: "bi bi-trash3-fill",
+      warning: "bi bi-exclamation-triangle-fill",
+      info: "bi bi-info-circle-fill",
+      success: "bi bi-check-circle-fill"
+    };
+    const icon = document.querySelector("#npDialogIcon i");
+    const detailElement = document.getElementById("npDialogDetail");
+    const confirmButton = document.getElementById("npDialogConfirm");
+    document.getElementById("npDialogKicker").textContent = kicker;
+    document.getElementById("npDialogTitle").textContent = title;
+    document.getElementById("npDialogMessage").textContent = message;
+    document.getElementById("npDialogCancel").textContent = cancelLabel;
+    confirmButton.textContent = confirmLabel;
+    confirmButton.className = `np-dialog-confirm is-${type}`;
+    document.getElementById("npDialogIcon").className = `np-dialog-icon is-${type}`;
+    if (icon) icon.className = iconMap[type] || iconMap.warning;
+    detailElement.textContent = detail;
+    detailElement.hidden = !detail;
+
+    dialogPreviousFocus = document.activeElement;
+    layer.hidden = false;
+    layer.setAttribute("aria-hidden", "false");
+    document.body.classList.add("has-np-dialog");
+    window.setTimeout(() => document.getElementById("npDialogCancel")?.focus(), 0);
+    return new Promise((resolve) => { dialogResolver = resolve; });
+  }
+
   function init() {
     setupFavorites();
     setupSidebar();
@@ -324,10 +407,12 @@ window.NextPulse.ui = (() => {
     setupMobileOperations();
     setupHealthCheck();
     setupLogout();
+    setupDialog();
   }
 
   return {
     init,
-    showPage
+    showPage,
+    confirmAction
   };
 })();

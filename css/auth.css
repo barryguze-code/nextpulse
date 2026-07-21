@@ -124,12 +124,30 @@ body {
 }
 
 .np-login-error {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  align-items: start;
+  gap: 9px;
   margin: 4px 0 12px;
   padding: 11px;
   color: #8a0f2b;
   background: #fff1f4;
   border: 1px solid #ffd1dc;
   border-radius: var(--np-radius-sm);
+}
+
+.np-login-error::before {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  content: "!";
+  color: #fff;
+  font-size: .78rem;
+  font-weight: 850;
+  line-height: 1;
+  background: var(--np-danger);
+  border-radius: 50%;
 }
 
 .np-auth-footer {

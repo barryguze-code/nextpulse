@@ -414,9 +414,17 @@ window.NextPulse.production = (() => {
     }
 
     const isInProgress = status === "IN_PROGRESS";
-    const confirmed = window.confirm(isInProgress
-      ? `Cancel in-progress batch ${batchNumber || ""}?\n\nPosted inventory movements will stay in inventory. This only removes the batch from active production work.`
-      : `Cancel draft batch ${batchNumber || ""}?`);
+    const confirmed = await window.NextPulse.ui.confirmAction({
+      type: "danger",
+      kicker: isInProgress ? "Production warning" : "Delete draft",
+      title: isInProgress ? "Cancel this active batch?" : "Delete this draft batch?",
+      message: `${batchNumber || "This batch"} will be removed from active production work.`,
+      detail: isInProgress
+        ? "Posted inventory movements will remain in inventory and will not be reversed."
+        : "The draft has not posted inventory movements and can be safely removed.",
+      confirmLabel: isInProgress ? "Cancel active batch" : "Delete draft",
+      cancelLabel: "Keep batch"
+    });
 
     if (!confirmed) {
       return;
