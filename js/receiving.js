@@ -5,6 +5,8 @@ window.NextPulse.receiving = (() => {
   let catalogItems = [];
   let lines = [];
   let hasLoaded = false;
+  let barcodeStream = null;
+  let barcodeFrameRequest = null;
   const packageDefaults = {
     "RM-UN-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
     "RM-AYCICEK-20LT": { packageUnit: "KOLI", unitsPerPack: 20, baseUnit: "LT" },
@@ -77,6 +79,7 @@ window.NextPulse.receiving = (() => {
         skuCode,
         categoryCode,
         description: row.description || "",
+        barcode: row.barcode || row.ean || row.gtin || "",
         baseUnit: row.baseUnit || row.unit || defaults.baseUnit || "",
         packageUnit: row.packUnit || row.packageUnit || row.containerUnit || row.unit || row.baseUnit || defaults.packageUnit || "",
         innerUnit: row.innerUnit || defaults.innerUnit || "",
@@ -96,9 +99,9 @@ window.NextPulse.receiving = (() => {
   }
 
   async function loadCatalog() {
-    const select = document.getElementById("receivingSku");
+    const skuInput = document.getElementById("receivingSku");
 
-    if (hasLoaded || !select) {
+    if (hasLoaded || !skuInput) {
       return;
     }
 
@@ -106,10 +109,11 @@ window.NextPulse.receiving = (() => {
       const rows = await window.NextPulse.api.get("/inventory/summary");
       catalogItems = normalizeCatalogRows(Array.isArray(rows) ? rows : []);
       hasLoaded = true;
-      renderSkuOptions();
+      renderSkuResults();
       updateReceivingPreview();
     } catch (exception) {
-      select.innerHTML = `<option value="">Unable to load SKUs</option>`;
+      const results = document.getElementById("receivingSkuResults");
+      if (results) results.innerHTML = `<div class="np-receiving-picker-state">Unable to load materials.</div>`;
       showMessage(exception.message || "Unable to load catalog items for receiving.", "error");
     }
   }
@@ -119,39 +123,86 @@ window.NextPulse.receiving = (() => {
     await loadCatalog();
   }
 
-  function renderSkuOptions() {
-    const select = document.getElementById("receivingSku");
+  function renderSkuResults() {
+    const results = document.getElementById("receivingSkuResults");
+    const search = document.getElementById("receivingSkuSearch");
 
-    if (!select) {
+    if (!results || !search) {
       return;
     }
 
-    const currentValue = select.value;
+    const query = search.value.trim().toLocaleLowerCase("tr-TR");
     const usedSkus = new Set(lines.map((line) => line.skuCode));
-    const availableItems = catalogItems.filter((item) => !usedSkus.has(item.skuCode));
+    const availableItems = catalogItems
+      .filter((item) => !usedSkus.has(item.skuCode))
+      .filter((item) => !query || [item.skuCode, item.description, item.categoryCode, item.barcode]
+        .some((value) => String(value || "").toLocaleLowerCase("tr-TR").includes(query)))
+      .slice(0, query ? 12 : 6);
 
     if (catalogItems.length === 0) {
-      select.innerHTML = `<option value="">No SKUs available</option>`;
+      results.innerHTML = `<div class="np-receiving-picker-state">No materials available.</div>`;
       return;
     }
 
     if (availableItems.length === 0) {
-      select.innerHTML = `<option value="">All available SKUs added</option>`;
+      results.innerHTML = `<div class="np-receiving-picker-state">No matching material. Try another SKU or description.</div>`;
       return;
     }
 
-    select.innerHTML = [
-      `<option value="">Select SKU</option>`,
-      ...availableItems.map((item) => `
-        <option value="${escapeHtml(item.skuCode)}">
-          ${escapeHtml(item.skuCode)} - ${escapeHtml(item.description)}
-        </option>
-      `)
-    ].join("");
+    results.innerHTML = availableItems.map((item) => `
+      <button class="np-receiving-sku-option" type="button" role="option" data-receiving-sku="${escapeHtml(item.skuCode)}">
+        <span class="np-item-thumb">${escapeHtml(item.skuCode.slice(0, 2))}</span>
+        <span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.skuCode)} · ${escapeHtml(item.packageUnit)} → ${escapeHtml(item.baseUnit)}</small></span>
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    `).join("");
+  }
 
-    if (availableItems.some((item) => item.skuCode === currentValue)) {
-      select.value = currentValue;
-    }
+  function selectSku(skuCode) {
+    const normalized = String(skuCode || "").trim();
+    const item = catalogItems.find((candidate) => candidate.skuCode === normalized || candidate.barcode === normalized);
+    const sku = document.getElementById("receivingSku");
+    const search = document.getElementById("receivingSkuSearch");
+    const results = document.getElementById("receivingSkuResults");
+    const selected = document.getElementById("receivingSelectedSku");
+
+    if (!item || !sku || !search || !selected) return false;
+    sku.value = item.skuCode;
+    search.value = item.skuCode;
+    if (results) results.hidden = true;
+    selected.hidden = false;
+    selected.innerHTML = `<span class="np-item-thumb">${escapeHtml(item.skuCode.slice(0, 2))}</span><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.skuCode)} · 1 ${escapeHtml(item.packageUnit)} = ${formatQuantity(item.unitsPerPack)} ${escapeHtml(item.baseUnit)}</small></span><button type="button" data-clear-receiving-sku aria-label="Choose another material"><i class="bi bi-x-lg"></i></button>`;
+    updateReceivingPreview();
+    const quantity = document.getElementById("receivingPackageQty");
+    quantity?.focus();
+    quantity?.select();
+    return true;
+  }
+
+  function clearSelectedSku({ focus = true } = {}) {
+    const sku = document.getElementById("receivingSku");
+    const search = document.getElementById("receivingSkuSearch");
+    const results = document.getElementById("receivingSkuResults");
+    const selected = document.getElementById("receivingSelectedSku");
+    if (sku) sku.value = "";
+    if (search) search.value = "";
+    if (selected) selected.hidden = true;
+    if (results) results.hidden = false;
+    renderSkuResults();
+    updateReceivingPreview();
+    if (focus) search?.focus();
+  }
+
+  function filterSkuResults() {
+    const sku = document.getElementById("receivingSku");
+    const results = document.getElementById("receivingSkuResults");
+    if (sku) sku.value = "";
+    if (results) results.hidden = false;
+    renderSkuResults();
+
+    const query = document.getElementById("receivingSkuSearch")?.value.trim() || "";
+    const exact = catalogItems.find((item) => item.skuCode.toLocaleLowerCase("tr-TR") === query.toLocaleLowerCase("tr-TR") || item.barcode === query);
+    if (exact) selectSku(exact.skuCode);
   }
 
   function findSelectedItem() {
@@ -310,8 +361,7 @@ window.NextPulse.receiving = (() => {
   }
 
   function clearLineInputs() {
-    renderSkuOptions();
-    document.getElementById("receivingSku").value = "";
+    clearSelectedSku({ focus: false });
     document.getElementById("receivingReason").value = "MAL_KABUL";
     document.getElementById("receivingPackageQty").value = "1";
     document.getElementById("receivingNotes").value = "";
@@ -376,7 +426,7 @@ window.NextPulse.receiving = (() => {
 
   function removeLine(index) {
     lines = lines.filter((_, lineIndex) => lineIndex !== index);
-    renderSkuOptions();
+    renderSkuResults();
     updateReceivingPreview();
     renderLines();
   }
@@ -459,7 +509,7 @@ window.NextPulse.receiving = (() => {
 
   function focusReceivingSku() {
     window.setTimeout(() => {
-      document.getElementById("receivingSku")?.focus();
+      document.getElementById("receivingSkuSearch")?.focus();
     }, 0);
   }
 
@@ -467,12 +517,9 @@ window.NextPulse.receiving = (() => {
     await loadCatalog();
 
     window.setTimeout(() => {
-      const sku = document.getElementById("receivingSku");
       const quantity = document.getElementById("receivingPackageQty");
 
-      if (skuCode && sku) {
-        sku.value = skuCode;
-      }
+      if (skuCode) selectSku(skuCode);
 
       if (quantity && !quantity.value) {
         quantity.value = "1";
@@ -484,20 +531,104 @@ window.NextPulse.receiving = (() => {
     }, 0);
   }
 
+  async function openBarcodeScanner() {
+    const sheet = document.getElementById("receivingScanSheet");
+    const video = document.getElementById("receivingBarcodeVideo");
+    const help = document.getElementById("receivingScanHelp");
+    if (!sheet || !video) return;
+
+    sheet.hidden = false;
+    sheet.setAttribute("aria-hidden", "false");
+    if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
+      if (help) help.textContent = "Camera scanning is not supported by this browser. Type the SKU or use a handheld scanner.";
+      return;
+    }
+
+    try {
+      barcodeStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false
+      });
+      video.srcObject = barcodeStream;
+      await video.play();
+      const detector = new window.BarcodeDetector({ formats: ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code"] });
+
+      const detectFrame = async () => {
+        if (!barcodeStream) return;
+        try {
+          const codes = await detector.detect(video);
+          const value = codes[0]?.rawValue?.trim();
+          if (value) {
+            if (selectSku(value)) {
+              await closeBarcodeScanner();
+              showMessage("Material scanned and selected.", "success");
+              return;
+            }
+            if (help) help.textContent = `Barcode ${value} is not assigned to a receiving SKU.`;
+          }
+        } catch {}
+        barcodeFrameRequest = window.requestAnimationFrame(detectFrame);
+      };
+
+      barcodeFrameRequest = window.requestAnimationFrame(detectFrame);
+    } catch {
+      barcodeStream?.getTracks().forEach((track) => track.stop());
+      barcodeStream = null;
+      video.srcObject = null;
+      if (help) help.textContent = "Camera could not start. Allow camera access, or type the SKU instead.";
+    }
+  }
+
+  async function closeBarcodeScanner() {
+    const sheet = document.getElementById("receivingScanSheet");
+    const video = document.getElementById("receivingBarcodeVideo");
+    if (barcodeFrameRequest) window.cancelAnimationFrame(barcodeFrameRequest);
+    barcodeFrameRequest = null;
+    barcodeStream?.getTracks().forEach((track) => track.stop());
+    barcodeStream = null;
+    if (video) video.srcObject = null;
+    if (sheet) {
+      sheet.hidden = true;
+      sheet.setAttribute("aria-hidden", "true");
+    }
+  }
+
   function init() {
     initDefaults();
+    const details = document.querySelector(".np-receiving-details");
+    if (details && window.matchMedia("(min-width: 768px)").matches) details.open = true;
     renderLines();
     updateReceivingPreview();
     updateNotesRequirement();
 
-    document.getElementById("receivingSku")?.addEventListener("change", updateReceivingPreview);
+    document.getElementById("receivingSkuSearch")?.addEventListener("input", filterSkuResults);
+    document.getElementById("receivingSkuSearch")?.addEventListener("focus", () => {
+      const results = document.getElementById("receivingSkuResults");
+      if (!findSelectedItem() && results) results.hidden = false;
+    });
     document.getElementById("receivingPackageQty")?.addEventListener("input", updateReceivingPreview);
     document.getElementById("receivingReason")?.addEventListener("change", updateNotesRequirement);
     document.getElementById("receivingForm")?.addEventListener("submit", addLine);
     document.getElementById("resetReceiving")?.addEventListener("click", reset);
     document.getElementById("postReceiving")?.addEventListener("click", postReceipt);
+    document.getElementById("receivingScanBarcode")?.addEventListener("click", openBarcodeScanner);
+    document.getElementById("receivingScanClose")?.addEventListener("click", closeBarcodeScanner);
+    document.getElementById("receivingScanSheet")?.addEventListener("click", (event) => {
+      if (event.target.id === "receivingScanSheet") closeBarcodeScanner();
+    });
 
     document.addEventListener("click", (event) => {
+      const skuOption = event.target.closest("[data-receiving-sku]");
+      if (skuOption) {
+        selectSku(skuOption.dataset.receivingSku);
+        return;
+      }
+
+      if (event.target.closest("[data-clear-receiving-sku]")) {
+        clearSelectedSku();
+        return;
+      }
+
       const button = event.target.closest("[data-remove-receiving-line]");
 
       if (!button) {
