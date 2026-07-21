@@ -930,6 +930,7 @@ window.NextPulse.inventory = (() => {
     document.getElementById("inventoryLocationFilter")?.addEventListener("change", render);
     document.getElementById("inventoryNonZeroOnly")?.addEventListener("change", render);
     document.getElementById("inventoryDrawerClose")?.addEventListener("click", closeDrawer);
+    document.getElementById("inventoryDrawerBack")?.addEventListener("click", closeDrawer);
     document.getElementById("inventoryDrawerBackdrop")?.addEventListener("click", closeDrawer);
     document.getElementById("inventoryDrawerReceive")?.addEventListener("click", () => receiveItem(selectedItem));
     document.getElementById("inventoryDrawerTransfer")?.addEventListener("click", () => transferItem(selectedItem));

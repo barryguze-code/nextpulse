@@ -1953,6 +1953,20 @@
   white-space: nowrap;
 }
 
+.np-drawer-breadcrumb {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 0 2px;
+  padding: 0;
+  color: var(--np-accent);
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  background: transparent;
+  border: 0;
+}
+
 .np-drawer-body {
   display: grid;
   gap: 14px;
