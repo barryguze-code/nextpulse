@@ -106,7 +106,7 @@ window.NextPulse.receiving = (() => {
     }
 
     try {
-      const rows = await window.NextPulse.api.get("/inventory/summary");
+      const rows = await window.NextPulse.api.get("/receiving/catalog");
       catalogItems = normalizeCatalogRows(Array.isArray(rows) ? rows : []);
       hasLoaded = true;
       renderSkuResults();
@@ -132,12 +132,17 @@ window.NextPulse.receiving = (() => {
     }
 
     const query = search.value.trim().toLocaleLowerCase("tr-TR");
+    if (!query) {
+      results.hidden = true;
+      results.innerHTML = "";
+      return;
+    }
     const usedSkus = new Set(lines.map((line) => line.skuCode));
     const availableItems = catalogItems
       .filter((item) => !usedSkus.has(item.skuCode))
       .filter((item) => !query || [item.skuCode, item.description, item.categoryCode, item.barcode]
         .some((value) => String(value || "").toLocaleLowerCase("tr-TR").includes(query)))
-      .slice(0, query ? 12 : 6);
+      .slice(0, 12);
 
     if (catalogItems.length === 0) {
       results.innerHTML = `<div class="np-receiving-picker-state">No materials available.</div>`;
@@ -187,7 +192,7 @@ window.NextPulse.receiving = (() => {
     if (sku) sku.value = "";
     if (search) search.value = "";
     if (selected) selected.hidden = true;
-    if (results) results.hidden = false;
+    if (results) results.hidden = true;
     renderSkuResults();
     updateReceivingPreview();
     if (focus) search?.focus();
@@ -199,7 +204,7 @@ window.NextPulse.receiving = (() => {
     const selected = document.getElementById("receivingSelectedSku");
     if (sku) sku.value = "";
     if (selected) selected.hidden = true;
-    if (results) results.hidden = false;
+    if (results) results.hidden = !document.getElementById("receivingSkuSearch")?.value.trim();
     renderSkuResults();
 
     const query = document.getElementById("receivingSkuSearch")?.value.trim() || "";
@@ -302,6 +307,7 @@ window.NextPulse.receiving = (() => {
     const lineCount = document.getElementById("receivingLineCount");
     const totalPackages = document.getElementById("receivingTotalPackages");
     const totalBaseQuantity = document.getElementById("receivingTotalBaseQty");
+    const draftLines = document.getElementById("receivingDraftLines");
 
     if (postButton) {
       postButton.disabled = lines.length === 0;
@@ -321,6 +327,12 @@ window.NextPulse.receiving = (() => {
     if (totalBaseQuantity) {
       const total = lines.reduce((sum, line) => sum + line.baseQuantity, 0);
       totalBaseQuantity.textContent = formatQuantity(total);
+    }
+
+    if (draftLines) {
+      draftLines.innerHTML = lines.length
+        ? lines.map((line, index) => `<button type="button" data-remove-receiving-line="${index}" title="Remove ${escapeHtml(line.skuCode)}"><strong>${escapeHtml(line.skuCode)}</strong><span>${formatQuantity(line.packageQuantity)} ${escapeHtml(line.packageUnit)}</span><i class="bi bi-x"></i></button>`).join("")
+        : `<span>Scan or type the first material</span>`;
     }
 
     if (!body) {
@@ -556,7 +568,13 @@ window.NextPulse.receiving = (() => {
       });
       video.srcObject = barcodeStream;
       await video.play();
-      const detector = new window.BarcodeDetector({ formats: ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "qr_code"] });
+      const desiredFormats = ["code_128", "code_39", "code_93", "codabar", "ean_13", "ean_8", "itf", "upc_a", "upc_e", "qr_code", "data_matrix", "aztec", "pdf417"];
+      const supportedFormats = typeof window.BarcodeDetector.getSupportedFormats === "function"
+        ? await window.BarcodeDetector.getSupportedFormats()
+        : desiredFormats;
+      const formats = desiredFormats.filter((format) => supportedFormats.includes(format));
+      const detector = new window.BarcodeDetector({ formats });
+      if (help) help.textContent = "Scan a UPC/EAN/Code 128 barcode, QR, Data Matrix, Aztec, or PDF417 code.";
 
       const detectFrame = async () => {
         if (!barcodeStream) return;
@@ -609,7 +627,8 @@ window.NextPulse.receiving = (() => {
     document.getElementById("receivingSkuSearch")?.addEventListener("input", filterSkuResults);
     document.getElementById("receivingSkuSearch")?.addEventListener("focus", () => {
       const results = document.getElementById("receivingSkuResults");
-      if (!findSelectedItem() && results) results.hidden = false;
+      const query = document.getElementById("receivingSkuSearch")?.value.trim();
+      if (!findSelectedItem() && results) results.hidden = !query;
     });
     document.getElementById("receivingPackageQty")?.addEventListener("input", updateReceivingPreview);
     document.getElementById("receivingReason")?.addEventListener("change", updateNotesRequirement);
