@@ -207,7 +207,7 @@ window.NextPulse.ui = (() => {
 
   function setupNavigationState() {
     document.addEventListener("click", (event) => {
-      const link = event.target.closest(".np-nav-link[data-page-title], .np-module-card[data-page-title]");
+      const link = event.target.closest("[data-page][data-page-title]");
 
       if (!link) {
         return;
@@ -226,6 +226,26 @@ window.NextPulse.ui = (() => {
     });
 
     showPage("home", "Home");
+  }
+
+  function setupMobileOperations() {
+    document.addEventListener("click", (event) => {
+      const scanButton = event.target.closest("[data-mobile-scan]");
+
+      if (!scanButton) {
+        return;
+      }
+
+      event.preventDefault();
+      showPage("inventory", "Scan Barcode");
+
+      const search = document.getElementById("inventorySearch");
+      if (search) {
+        search.placeholder = "Scan or enter item barcode";
+        search.focus({ preventScroll: true });
+        window.setTimeout(() => search.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
+      }
+    });
   }
 
   function showPage(page, pageTitle) {
@@ -251,6 +271,9 @@ window.NextPulse.ui = (() => {
 
   function updateActiveNavigation() {
     document.querySelectorAll(".np-nav-link").forEach((item) => {
+      item.classList.toggle("active", item.dataset.page === currentPage);
+    });
+    document.querySelectorAll(".np-mobile-bottom-nav [data-page]").forEach((item) => {
       item.classList.toggle("active", item.dataset.page === currentPage);
     });
   }
@@ -288,6 +311,7 @@ window.NextPulse.ui = (() => {
     setupFavorites();
     setupSidebar();
     setupNavigationState();
+    setupMobileOperations();
     setupHealthCheck();
     setupLogout();
   }
