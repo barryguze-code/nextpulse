@@ -112,9 +112,9 @@ window.NextPulse.transfer = (() => {
   }
 
   async function loadCatalog() {
-    const skuSelect = document.getElementById("transferSku");
+    const skuInput = document.getElementById("transferSku");
 
-    if (hasLoaded || !skuSelect) {
+    if (hasLoaded || !skuInput) {
       return;
     }
 
@@ -122,13 +122,14 @@ window.NextPulse.transfer = (() => {
       const rows = await window.NextPulse.api.get("/inventory/summary");
       catalogItems = normalizeInventoryRows(Array.isArray(rows) ? rows : []);
       hasLoaded = true;
-      renderSkuOptions();
+      renderSkuResults();
       renderLocationOptions();
       applySmartLocationDefaults();
       updateMode();
       updatePreview();
     } catch (exception) {
-      skuSelect.innerHTML = `<option value="">Unable to load SKUs</option>`;
+      const results = document.getElementById("transferSkuResults");
+      if (results) results.innerHTML = `<div class="np-receiving-picker-state">Unable to load materials.</div>`;
       showMessage(exception.message || "Unable to load transfer data.", "error");
     }
   }
@@ -138,31 +139,84 @@ window.NextPulse.transfer = (() => {
     await loadCatalog();
   }
 
-  function renderSkuOptions() {
-    const select = document.getElementById("transferSku");
-    const currentValue = select?.value || "";
-
-    if (!select) {
+  function renderSkuResults() {
+    const results = document.getElementById("transferSkuResults");
+    const search = document.getElementById("transferSkuSearch");
+    if (!results || !search) {
       return;
     }
+
+    const query = search.value.trim().toLocaleLowerCase("tr-TR");
+    const matches = catalogItems
+      .filter((item) => !query || [item.skuCode, item.description, item.categoryCode]
+        .some((value) => String(value || "").toLocaleLowerCase("tr-TR").includes(query)))
+      .slice(0, query ? 12 : 6);
 
     if (catalogItems.length === 0) {
-      select.innerHTML = `<option value="">No SKUs available</option>`;
+      results.innerHTML = `<div class="np-receiving-picker-state">No materials available.</div>`;
       return;
     }
 
-    select.innerHTML = [
-      `<option value="">Select SKU</option>`,
-      ...catalogItems.map((item) => `
-        <option value="${escapeHtml(item.skuCode)}">
-          ${escapeHtml(item.skuCode)} - ${escapeHtml(item.description)}
-        </option>
-      `)
-    ].join("");
-
-    if (catalogItems.some((item) => item.skuCode === currentValue)) {
-      select.value = currentValue;
+    if (matches.length === 0) {
+      results.innerHTML = `<div class="np-receiving-picker-state">No matching material. Try another SKU or description.</div>`;
+      return;
     }
+
+    results.innerHTML = matches.map((item) => `
+      <button class="np-receiving-sku-option" type="button" role="option" data-transfer-sku="${escapeHtml(item.skuCode)}">
+        <span class="np-item-thumb">${escapeHtml(item.skuCode.slice(0, 2))}</span>
+        <span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.skuCode)} · ${escapeHtml(item.packageUnit)} → ${escapeHtml(item.baseUnit)}</small></span>
+        <i class="bi bi-chevron-right"></i>
+      </button>
+    `).join("");
+  }
+
+  function selectTransferSku(skuCode) {
+    const item = catalogItems.find((candidate) => candidate.skuCode === skuCode);
+    const sku = document.getElementById("transferSku");
+    const search = document.getElementById("transferSkuSearch");
+    const results = document.getElementById("transferSkuResults");
+    const selected = document.getElementById("transferSelectedSku");
+    if (!item || !sku || !search || !selected) return false;
+
+    sku.value = item.skuCode;
+    search.value = item.skuCode;
+    if (results) results.hidden = true;
+    selected.hidden = false;
+    selected.innerHTML = `<span class="np-item-thumb">${escapeHtml(item.skuCode.slice(0, 2))}</span><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.skuCode)} · ${escapeHtml(item.packageUnit)} → ${escapeHtml(item.baseUnit)}</small></span><button type="button" data-clear-transfer-sku aria-label="Choose another material"><i class="bi bi-x-lg"></i></button>`;
+    applySmartLocationDefaults();
+    updateMode();
+    updatePreview();
+    document.getElementById(isFinishedSelected() ? "transferPalletQty" : "transferPackageQty")?.focus();
+    return true;
+  }
+
+  function clearTransferSku({ focus = true } = {}) {
+    const sku = document.getElementById("transferSku");
+    const search = document.getElementById("transferSkuSearch");
+    const results = document.getElementById("transferSkuResults");
+    const selected = document.getElementById("transferSelectedSku");
+    if (sku) sku.value = "";
+    if (search) search.value = "";
+    if (selected) selected.hidden = true;
+    if (results) results.hidden = false;
+    renderSkuResults();
+    updateMode();
+    updatePreview();
+    if (focus) search?.focus();
+  }
+
+  function filterTransferSkuResults() {
+    const sku = document.getElementById("transferSku");
+    const results = document.getElementById("transferSkuResults");
+    const selected = document.getElementById("transferSelectedSku");
+    if (sku) sku.value = "";
+    if (selected) selected.hidden = true;
+    if (results) results.hidden = false;
+    renderSkuResults();
+    const query = document.getElementById("transferSkuSearch")?.value.trim() || "";
+    const exact = catalogItems.find((item) => item.skuCode.toLocaleLowerCase("tr-TR") === query.toLocaleLowerCase("tr-TR"));
+    if (exact) selectTransferSku(exact.skuCode);
   }
 
   function renderLocationOptions() {
@@ -486,8 +540,7 @@ window.NextPulse.transfer = (() => {
     mergeOrAddLine(line);
     document.getElementById("transferLineNotes").value = "";
     renderLines();
-    updatePreview();
-    document.getElementById("transferSku")?.focus();
+    clearTransferSku();
   }
 
   function removeLine(index) {
@@ -628,6 +681,7 @@ window.NextPulse.transfer = (() => {
     document.getElementById("transferPalletQty").value = "1";
     document.getElementById("transferBoxesPerPallet").value = "250";
     document.getElementById("transferUnitsPerBox").value = "12";
+    clearTransferSku({ focus: false });
     applySmartLocationDefaults();
     showMessage("");
     renderLines();
@@ -639,11 +693,7 @@ window.NextPulse.transfer = (() => {
     await loadCatalog();
 
     window.setTimeout(() => {
-      const sku = document.getElementById("transferSku");
-
-      if (skuCode && sku) {
-        sku.value = skuCode;
-      }
+      if (skuCode) selectTransferSku(skuCode);
 
       applySmartLocationDefaults();
       updateMode();
@@ -662,16 +712,18 @@ window.NextPulse.transfer = (() => {
 
   function init() {
     initDefaults();
+    const details = document.querySelector(".np-transfer-details");
+    if (details && window.matchMedia("(min-width: 768px)").matches) details.open = true;
     renderLines();
     updatePreview();
 
     document.getElementById("transferForm")?.addEventListener("submit", addLine);
     document.getElementById("resetTransfer")?.addEventListener("click", reset);
     document.getElementById("postTransfer")?.addEventListener("click", postTransfer);
-    document.getElementById("transferSku")?.addEventListener("change", () => {
-      applySmartLocationDefaults();
-      updateMode();
-      updatePreview();
+    document.getElementById("transferSkuSearch")?.addEventListener("input", filterTransferSkuResults);
+    document.getElementById("transferSkuSearch")?.addEventListener("focus", () => {
+      const results = document.getElementById("transferSkuResults");
+      if (!selectedItem() && results) results.hidden = false;
     });
 
     document.getElementById("transferFromLocation")?.addEventListener("change", () => {
@@ -692,6 +744,17 @@ window.NextPulse.transfer = (() => {
     });
 
     document.addEventListener("click", (event) => {
+      const skuOption = event.target.closest("[data-transfer-sku]");
+      if (skuOption) {
+        selectTransferSku(skuOption.dataset.transferSku);
+        return;
+      }
+
+      if (event.target.closest("[data-clear-transfer-sku]")) {
+        clearTransferSku();
+        return;
+      }
+
       const button = event.target.closest("[data-remove-transfer-line]");
 
       if (!button) {
@@ -704,7 +767,7 @@ window.NextPulse.transfer = (() => {
     document.addEventListener("nextpulse:page-change", (event) => {
       if (event.detail?.page === "transfers") {
         loadCatalog();
-        window.setTimeout(() => document.getElementById("transferSku")?.focus(), 0);
+        window.setTimeout(() => document.getElementById("transferSkuSearch")?.focus(), 0);
       }
     });
   }

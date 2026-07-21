@@ -196,7 +196,9 @@ window.NextPulse.receiving = (() => {
   function filterSkuResults() {
     const sku = document.getElementById("receivingSku");
     const results = document.getElementById("receivingSkuResults");
+    const selected = document.getElementById("receivingSelectedSku");
     if (sku) sku.value = "";
+    if (selected) selected.hidden = true;
     if (results) results.hidden = false;
     renderSkuResults();
 

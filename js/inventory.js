@@ -793,6 +793,8 @@ window.NextPulse.inventory = (() => {
       if (body) {
         body.innerHTML = `<tr><td colspan="6" class="np-empty-cell">${escapeHtml(exception.message || "Unable to load inventory.")}</td></tr>`;
       }
+      const mobileList = document.getElementById("inventoryMobileList");
+      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">${escapeHtml(exception.message || "Unable to load inventory.")}</div>`;
     }
   }
 
@@ -837,6 +839,8 @@ window.NextPulse.inventory = (() => {
   }
 
   function init() {
+    const filters = document.querySelector(".np-inventory-filters");
+    if (filters && window.matchMedia("(min-width: 768px)").matches) filters.open = true;
     initColumnControls();
     document.getElementById("refreshInventory")?.addEventListener("click", load);
     document.getElementById("inventorySearch")?.addEventListener("input", render);
