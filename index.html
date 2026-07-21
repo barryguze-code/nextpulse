@@ -11,7 +11,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link href="css/theme.css?v=20260719-3" rel="stylesheet">
   <link href="css/layout.css?v=20260719-3" rel="stylesheet">
-  <link href="css/components.css?v=20260721-10" rel="stylesheet">
+  <link href="css/components.css?v=20260721-11" rel="stylesheet">
   <link href="css/app.css?v=20260719-3" rel="stylesheet">
   <link href="css/orders.css?v=20260720-2" rel="stylesheet">
 </head>
@@ -562,14 +562,11 @@
           </div>
 
           <div class="np-workspace-grid np-receiving-workspace">
-            <aside class="np-summary-panel np-receiving-draft">
-              <div><p class="np-mini-label">Draft Receipt</p><h3 id="receivingLineCount">No lines yet</h3></div>
+            <aside class="np-summary-panel np-receiving-draft" id="receivingDraft" hidden aria-label="Draft receipt lines">
               <div class="np-receiving-draft-lines" id="receivingDraftLines"><span>Scan or type the first material</span></div>
-              <div class="np-summary-stat"><span>Total packages</span><strong id="receivingTotalPackages">0</strong></div>
-              <div class="np-summary-stat"><span>Total base quantity</span><strong id="receivingTotalBaseQty">0</strong></div>
-              <div class="np-alert" id="receivingMessage" hidden></div>
             </aside>
             <form class="np-form-panel" id="receivingForm" novalidate>
+              <div class="np-alert np-receiving-form-message" id="receivingMessage" hidden></div>
               <div class="np-form-section">
                 <div>
                   <p class="np-mini-label">Receive Stock</p>
@@ -827,7 +824,7 @@
   <script src="js/component-loader.js?v=20260719-3"></script>
   <script src="js/ui.js?v=20260721-8"></script>
   <script src="js/inventory.js?v=20260721-7"></script>
-  <script src="js/receiving.js?v=20260721-9"></script>
+  <script src="js/receiving.js?v=20260721-10"></script>
   <script src="js/production.js?v=20260721-8"></script>
   <script src="js/transfer.js?v=20260721-8"></script>
   <script src="js/orders.js?v=20260720-2"></script>

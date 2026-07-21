@@ -304,35 +304,19 @@ window.NextPulse.receiving = (() => {
     const body = document.getElementById("receivingLineBody");
     const mobileList = document.getElementById("receivingMobileList");
     const postButton = document.getElementById("postReceiving");
-    const lineCount = document.getElementById("receivingLineCount");
-    const totalPackages = document.getElementById("receivingTotalPackages");
-    const totalBaseQuantity = document.getElementById("receivingTotalBaseQty");
+    const draft = document.getElementById("receivingDraft");
     const draftLines = document.getElementById("receivingDraftLines");
 
     if (postButton) {
       postButton.disabled = lines.length === 0;
     }
 
-    if (lineCount) {
-      lineCount.textContent = lines.length === 0
-        ? "No lines yet"
-        : `${lines.length} line${lines.length === 1 ? "" : "s"} ready`;
-    }
-
-    if (totalPackages) {
-      const total = lines.reduce((sum, line) => sum + line.packageQuantity, 0);
-      totalPackages.textContent = formatQuantity(total);
-    }
-
-    if (totalBaseQuantity) {
-      const total = lines.reduce((sum, line) => sum + line.baseQuantity, 0);
-      totalBaseQuantity.textContent = formatQuantity(total);
-    }
+    if (draft) draft.hidden = lines.length === 0;
 
     if (draftLines) {
       draftLines.innerHTML = lines.length
         ? lines.map((line, index) => `<button type="button" data-remove-receiving-line="${index}" title="Remove ${escapeHtml(line.skuCode)}"><strong>${escapeHtml(line.skuCode)}</strong><span>${formatQuantity(line.packageQuantity)} ${escapeHtml(line.packageUnit)}</span><i class="bi bi-x"></i></button>`).join("")
-        : `<span>Scan or type the first material</span>`;
+        : "";
     }
 
     if (!body) {
