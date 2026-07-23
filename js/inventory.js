@@ -14,7 +14,9 @@ window.NextPulse.inventory = (() => {
   ];
 
   let items = [];
+  let openProductionBatches = [];
   let hasLoaded = false;
+  let batchesLoaded = false;
   let selectedItem = null;
 
   function formatQuantity(value) {
@@ -766,6 +768,16 @@ window.NextPulse.inventory = (() => {
     const mode = document.getElementById("inventoryAdjustmentMode")?.value;
     const quantity = Number(document.getElementById("inventoryAdjustmentQuantity")?.value || 0);
     const reason = document.querySelector("input[name='inventoryReason']:checked")?.value;
+    const isProductionUse = reason === "USE";
+    const batchWrap = document.getElementById("inventoryAdjustmentBatchWrap");
+    const note = document.getElementById("inventoryAdjustmentNote");
+    const noteLabel = document.getElementById("inventoryAdjustmentNoteLabel");
+    if (batchWrap) batchWrap.hidden = !isProductionUse;
+    if (note) {
+      note.required = !isProductionUse;
+      note.placeholder = isProductionUse ? "Add a production note if needed" : "What happened and why?";
+    }
+    if (noteLabel) noteLabel.innerHTML = isProductionUse ? "Note (optional)" : "Note <b aria-hidden=\"true\">*</b>";
     const unit = mode === "BASE" ? getBaseUnit(selectedItem) : getPackUnit(selectedItem);
     const quantityInput = document.getElementById("inventoryAdjustmentQuantity");
     quantityInput.step = isWholeUnit(unit) ? "1" : "0.01";
@@ -774,6 +786,48 @@ window.NextPulse.inventory = (() => {
     document.getElementById("inventoryAdjustmentPreview").textContent = reason === "PHYSICAL_COUNT"
       ? `Current: ${formatQuantityForUnit(current, unit)} ${unit}. Enter the total physically counted.`
       : `Available here: ${formatQuantityForUnit(current, unit)} ${unit}${quantity ? ` · After: ${formatQuantityForUnit(Math.max(0, current - quantity), unit)} ${unit}` : ""}`;
+  }
+
+  function renderProductionBatches() {
+    const container = document.getElementById("inventoryAdjustmentBatches");
+    const help = document.getElementById("inventoryAdjustmentBatchHelp");
+    if (!container) return;
+
+    if (!batchesLoaded) {
+      container.innerHTML = `<div class="np-batch-empty">Loading open batches...</div>`;
+      return;
+    }
+    if (!openProductionBatches.length) {
+      container.innerHTML = `<div class="np-batch-empty">No open production batch is available.</div>`;
+      if (help) help.textContent = "Start a manufacturing batch before posting production use.";
+      return;
+    }
+
+    container.innerHTML = openProductionBatches.map((batch, index) => `
+      <label class="np-batch-choice">
+        <input type="radio" name="inventoryProductionBatch" value="${escapeHtml(batch.productionBatchId)}" ${index === 0 ? "checked" : ""}>
+        <span>
+          <strong>${escapeHtml(batch.batchNumber || "Production batch")}</strong>
+          <small>${escapeHtml(batch.finishedDescription || batch.finishedSkuCode || batch.recipeName || "")} · ${escapeHtml(batch.status || "")}</small>
+          <em>${formatQuantityForUnit(batch.plannedOutputQuantity, "ADET")}</em>
+        </span>
+      </label>
+    `).join("");
+    if (help) help.textContent = "This movement will be linked to the selected manufacturing batch.";
+  }
+
+  async function loadProductionBatches() {
+    renderProductionBatches();
+    try {
+      openProductionBatches = await window.NextPulse.api.get("/production/batches/open");
+    } catch (exception) {
+      openProductionBatches = [];
+      const help = document.getElementById("inventoryAdjustmentBatchHelp");
+      if (help) help.textContent = exception.message || "Open batches could not be loaded.";
+    } finally {
+      batchesLoaded = true;
+      renderProductionBatches();
+    }
   }
 
   function openAdjustment(item) {
@@ -791,6 +845,8 @@ window.NextPulse.inventory = (() => {
     document.getElementById("inventoryAdjustmentNote").value = "";
     sheet.hidden = false;
     sheet.setAttribute("aria-hidden", "false");
+    if (!batchesLoaded) loadProductionBatches();
+    else renderProductionBatches();
     updateAdjustmentPreview();
     window.setTimeout(() => document.getElementById("inventoryAdjustmentQuantity")?.focus(), 0);
   }
@@ -805,14 +861,33 @@ window.NextPulse.inventory = (() => {
     event.preventDefault();
     const quantity = Number(document.getElementById("inventoryAdjustmentQuantity").value);
     const note = document.getElementById("inventoryAdjustmentNote").value.trim();
-    if (!Number.isFinite(quantity) || quantity < 0 || !note) return;
     const reasonCode = document.querySelector("input[name='inventoryReason']:checked").value;
+    const productionBatchId = document.querySelector("input[name='inventoryProductionBatch']:checked")?.value || null;
+    const form = document.getElementById("inventoryAdjustmentForm");
+    if (!Number.isFinite(quantity) || quantity < 0 || (reasonCode !== "USE" && !note)) {
+      form?.reportValidity();
+      return;
+    }
+    if (reasonCode === "USE" && !productionBatchId) {
+      await window.NextPulse.ui.confirmAction({
+        type: "warning",
+        kicker: "Production batch required",
+        title: "Select an open batch",
+        message: "Production use must be linked to the manufacturing batch that consumes this material.",
+        cancelLabel: "Close",
+        confirmLabel: "Choose batch"
+      });
+      return;
+    }
+    const selectedBatch = openProductionBatches.find((batch) => batch.productionBatchId === productionBatchId);
     const confirmed = await window.NextPulse.ui.confirmAction({
       type: reasonCode === "PHYSICAL_COUNT" ? "info" : "warning",
       kicker: "Inventory ledger",
-      title: reasonCode === "PHYSICAL_COUNT" ? "Post physical count?" : "Reduce inventory?",
+      title: reasonCode === "PHYSICAL_COUNT" ? "Post physical count?" : reasonCode === "USE" ? "Post production use?" : "Reduce inventory?",
       message: `${selectedItem.description}: ${quantity} ${document.getElementById("inventoryAdjustmentMode").selectedOptions[0].textContent}`,
-      detail: note,
+      detail: reasonCode === "USE"
+        ? `${selectedBatch?.batchNumber || "Production batch"}${note ? ` · ${note}` : ""}`
+        : note,
       confirmLabel: "Post movement"
     });
     if (!confirmed) return;
@@ -822,7 +897,8 @@ window.NextPulse.inventory = (() => {
       reasonCode,
       quantityMode: document.getElementById("inventoryAdjustmentMode").value,
       quantity,
-      note
+      note,
+      productionBatchId
     });
     closeAdjustment();
     await load();
