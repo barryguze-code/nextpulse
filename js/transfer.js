@@ -314,6 +314,30 @@ window.NextPulse.transfer = (() => {
     document.querySelectorAll("[data-transfer-finished-field]").forEach((field) => {
       field.hidden = !finished;
     });
+
+    constrainFinishedGoodRoute();
+  }
+
+  function constrainFinishedGoodRoute() {
+    const from = document.getElementById("transferFromLocation");
+    const to = document.getElementById("transferToLocation");
+    if (!from || !to) return;
+
+    Array.from(from.options).forEach((option) => { option.disabled = false; });
+    Array.from(to.options).forEach((option) => { option.disabled = false; });
+    if (!isFinishedSelected()) return;
+
+    const allowedSources = new Set(["FACTORY", "BIM_INTERMEDIATE"]);
+    Array.from(from.options).forEach((option) => {
+      if (option.value) option.disabled = !allowedSources.has(option.value);
+    });
+    if (!allowedSources.has(from.value)) from.value = "FACTORY";
+
+    const requiredDestination = from.value === "BIM_INTERMEDIATE" ? "TARGET_3PL" : "BIM_INTERMEDIATE";
+    Array.from(to.options).forEach((option) => {
+      if (option.value) option.disabled = option.value !== requiredDestination;
+    });
+    to.value = requiredDestination;
   }
 
   function applySmartLocationDefaults() {
@@ -335,11 +359,9 @@ window.NextPulse.transfer = (() => {
     }
 
     if (isFinishedGood(item?.categoryCode)) {
-      if (!to.value || to.value === production) {
-        to.value = from.value === bim
-          ? (target || locations.find((location) => location.locationCode !== from.value)?.locationCode || "")
-          : (bim || locations.find((location) => location.locationCode !== from.value)?.locationCode || "");
-      }
+      from.value = from.value === bim ? bim : factory;
+      to.value = from.value === bim ? target : bim;
+      constrainFinishedGoodRoute();
       return;
     }
 
@@ -362,7 +384,10 @@ window.NextPulse.transfer = (() => {
 
     if (bim && target && from.value === bim) {
       to.value = target;
+    } else if (from.value === "FACTORY") {
+      to.value = bim;
     }
+    constrainFinishedGoodRoute();
   }
 
   function showMessage(message, type = "") {
@@ -559,6 +584,13 @@ window.NextPulse.transfer = (() => {
       if (invalid) {
         showMessage("Pallet, box, and unit quantities must all be greater than zero.", "error");
         window.NextPulse.ui.focusFieldError(invalid[0], invalid[1]);
+        return;
+      }
+
+      const approvedRoute = (from.value === "FACTORY" && to.value === "BIM_INTERMEDIATE")
+        || (from.value === "BIM_INTERMEDIATE" && to.value === "TARGET_3PL");
+      if (!approvedRoute) {
+        showMessage("Finished goods can move only Fabrika → BIM Ara Depo or BIM Ara Depo → Hedef.", "error");
         return;
       }
     }

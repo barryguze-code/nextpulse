@@ -7,6 +7,10 @@ window.NextPulse.receiving = (() => {
   let hasLoaded = false;
   let barcodeStream = null;
   let barcodeFrameRequest = null;
+  let barcodeControls = null;
+  let scanCatalogItems = [];
+  let scannedItem = null;
+  let scannerActionMode = false;
   const packageDefaults = {
     "RM-UN-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
     "RM-AYCICEK-20LT": { packageUnit: "KOLI", unitsPerPack: 20, baseUnit: "LT" },
@@ -93,6 +97,21 @@ window.NextPulse.receiving = (() => {
       .sort((a, b) => a.skuCode.localeCompare(b.skuCode));
   }
 
+  function normalizeScanRows(rows) {
+    const bySku = new Map();
+    rows.forEach((row) => {
+      const skuCode = row.skuCode || row.itemCode || row.sku || "";
+      if (!skuCode || bySku.has(skuCode)) return;
+      bySku.set(skuCode, {
+        skuCode,
+        description: row.description || skuCode,
+        categoryCode: row.categoryCode || row.category || "",
+        barcode: row.barcode || row.ean || row.gtin || ""
+      });
+    });
+    return Array.from(bySku.values());
+  }
+
   function isFinishedGood(categoryCode) {
     const normalized = String(categoryCode || "").toUpperCase();
     return ["MAMUL", "FINISHED_GOOD", "FINISHED GOOD", "FG"].includes(normalized);
@@ -107,6 +126,7 @@ window.NextPulse.receiving = (() => {
 
     try {
       const rows = await window.NextPulse.api.get("/receiving/catalog");
+      scanCatalogItems = normalizeScanRows(Array.isArray(rows) ? rows : []);
       catalogItems = normalizeCatalogRows(Array.isArray(rows) ? rows : []);
       hasLoaded = true;
       renderSkuResults();
@@ -532,20 +552,96 @@ window.NextPulse.receiving = (() => {
     }, 0);
   }
 
-  async function openBarcodeScanner() {
+  function stopScannerCamera() {
+    if (barcodeFrameRequest) window.cancelAnimationFrame(barcodeFrameRequest);
+    barcodeFrameRequest = null;
+    barcodeControls?.stop?.();
+    barcodeControls = null;
+    barcodeStream?.getTracks().forEach((track) => track.stop());
+    barcodeStream = null;
+    const video = document.getElementById("receivingBarcodeVideo");
+    if (video) video.srcObject = null;
+  }
+
+  function showScannedActions(item) {
+    scannedItem = item;
+    stopScannerCamera();
+    document.querySelector("#receivingScanSheet .np-barcode-reader").hidden = true;
+    document.getElementById("receivingScanHelp").hidden = true;
+    const result = document.getElementById("receivingScanResult");
+    result.hidden = false;
+    document.getElementById("receivingScanResultThumb").textContent = item.skuCode.slice(0, 2);
+    document.getElementById("receivingScanResultName").textContent = item.description;
+    document.getElementById("receivingScanResultSku").textContent = item.skuCode;
+    const receiveAction = document.querySelector('[data-scan-action="receive"]');
+    if (receiveAction) {
+      receiveAction.disabled = isFinishedGood(item.categoryCode);
+      receiveAction.title = receiveAction.disabled
+        ? "Finished goods enter inventory through Manufacturing"
+        : "Receive this item";
+    }
+  }
+
+  async function handleScannedValue(value) {
+    const item = scanCatalogItems.find((candidate) => candidate.skuCode === value || candidate.barcode === value);
+    if (!item) {
+      const help = document.getElementById("receivingScanHelp");
+      if (help) help.textContent = `Barcode ${value} is not assigned to an SKU.`;
+      return false;
+    }
+    if (scannerActionMode) {
+      showScannedActions(item);
+      return true;
+    }
+    if (selectSku(item.skuCode)) {
+      await closeBarcodeScanner();
+      showMessage("Material scanned and selected.", "success");
+      return true;
+    }
+    return false;
+  }
+
+  async function openBarcodeScanner(options = {}) {
     const sheet = document.getElementById("receivingScanSheet");
     const video = document.getElementById("receivingBarcodeVideo");
     const help = document.getElementById("receivingScanHelp");
     if (!sheet || !video) return;
 
+    await loadCatalog();
+    scannerActionMode = Boolean(options.actionMode);
+    scannedItem = null;
+    stopScannerCamera();
+    document.querySelector("#receivingScanSheet .np-barcode-reader").hidden = false;
+    document.getElementById("receivingScanResult").hidden = true;
+    help.hidden = false;
+    help.textContent = "Place the barcode inside the camera frame.";
+
     sheet.hidden = false;
     sheet.setAttribute("aria-hidden", "false");
-    if (!("BarcodeDetector" in window) || !navigator.mediaDevices?.getUserMedia) {
-      if (help) help.textContent = "Camera scanning is not supported by this browser. Type the SKU or use a handheld scanner.";
+    if (!navigator.mediaDevices?.getUserMedia) {
+      if (help) help.textContent = "Camera access is not supported by this browser. Type the SKU or use a handheld scanner.";
       return;
     }
 
     try {
+      if (!("BarcodeDetector" in window) && window.ZXingBrowser?.BrowserMultiFormatReader) {
+        const reader = new window.ZXingBrowser.BrowserMultiFormatReader();
+        barcodeControls = await reader.decodeFromConstraints(
+          { video: { facingMode: { ideal: "environment" } }, audio: false },
+          video,
+          (result) => {
+            const value = result?.getText?.()?.trim();
+            if (value) handleScannedValue(value);
+          }
+        );
+        if (help) help.textContent = "Scanner ready · UPC, EAN, Code 128, QR and Data Matrix supported.";
+        return;
+      }
+
+      if (!("BarcodeDetector" in window)) {
+        throw new Error("No barcode decoder is available.");
+      }
+
       barcodeStream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: { ideal: "environment" } },
         audio: false
@@ -566,12 +662,7 @@ window.NextPulse.receiving = (() => {
           const codes = await detector.detect(video);
           const value = codes[0]?.rawValue?.trim();
           if (value) {
-            if (selectSku(value)) {
-              await closeBarcodeScanner();
-              showMessage("Material scanned and selected.", "success");
-              return;
-            }
-            if (help) help.textContent = `Barcode ${value} is not assigned to a receiving SKU.`;
+            if (await handleScannedValue(value)) return;
           }
         } catch {}
         barcodeFrameRequest = window.requestAnimationFrame(detectFrame);
@@ -589,14 +680,26 @@ window.NextPulse.receiving = (() => {
   async function closeBarcodeScanner() {
     const sheet = document.getElementById("receivingScanSheet");
     const video = document.getElementById("receivingBarcodeVideo");
-    if (barcodeFrameRequest) window.cancelAnimationFrame(barcodeFrameRequest);
-    barcodeFrameRequest = null;
-    barcodeStream?.getTracks().forEach((track) => track.stop());
-    barcodeStream = null;
-    if (video) video.srcObject = null;
+    stopScannerCamera();
     if (sheet) {
       sheet.hidden = true;
       sheet.setAttribute("aria-hidden", "true");
+    }
+  }
+
+  async function handleScanAction(action) {
+    const item = scannedItem;
+    if (!item) return;
+    await closeBarcodeScanner();
+    if (action === "receive") {
+      window.NextPulse.ui.showPage("receiving", "Receiving");
+      await prefillSku(item.skuCode);
+    } else if (action === "use") {
+      window.NextPulse.ui.showPage("inventory", "Use Material");
+      await window.NextPulse.inventory?.prefillUse?.(item.skuCode);
+    } else if (action === "transfer") {
+      window.NextPulse.ui.showPage("transfers", "Transfers");
+      await window.NextPulse.transfer?.prefillSku?.(item.skuCode);
     }
   }
 
@@ -621,11 +724,17 @@ window.NextPulse.receiving = (() => {
     document.getElementById("postReceiving")?.addEventListener("click", postReceipt);
     document.getElementById("receivingScanBarcode")?.addEventListener("click", openBarcodeScanner);
     document.getElementById("receivingScanClose")?.addEventListener("click", closeBarcodeScanner);
+    document.getElementById("receivingScanAgain")?.addEventListener("click", () => openBarcodeScanner({ actionMode: true }));
     document.getElementById("receivingScanSheet")?.addEventListener("click", (event) => {
       if (event.target.id === "receivingScanSheet") closeBarcodeScanner();
     });
 
     document.addEventListener("click", (event) => {
+      const scanAction = event.target.closest("[data-scan-action]");
+      if (scanAction) {
+        handleScanAction(scanAction.dataset.scanAction);
+        return;
+      }
       const skuOption = event.target.closest("[data-receiving-sku]");
       if (skuOption) {
         selectSku(skuOption.dataset.receivingSku);
@@ -657,6 +766,7 @@ window.NextPulse.receiving = (() => {
   return {
     init,
     loadCatalog,
-    prefillSku
+    prefillSku,
+    openScanner: openBarcodeScanner
   };
 })();

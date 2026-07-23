@@ -880,6 +880,12 @@ window.NextPulse.inventory = (() => {
     }
   }
 
+  async function prefillUse(skuCode) {
+    if (!hasLoaded) await load();
+    const item = findItemByKey(skuCode);
+    if (item) openAdjustment(item);
+  }
+
   function initColumnControls() {
     const popover = document.getElementById("inventoryColumnPopover");
     const button = document.getElementById("inventoryColumnsButton");
@@ -988,6 +994,7 @@ window.NextPulse.inventory = (() => {
   return {
     init,
     load,
-    refresh: load
+    refresh: load,
+    prefillUse
   };
 })();

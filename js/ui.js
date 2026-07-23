@@ -273,14 +273,7 @@ window.NextPulse.ui = (() => {
       }
 
       event.preventDefault();
-      showPage("inventory", "Scan Barcode");
-
-      const search = document.getElementById("inventorySearch");
-      if (search) {
-        search.placeholder = "Scan or enter item barcode";
-        search.focus({ preventScroll: true });
-        window.setTimeout(() => search.scrollIntoView({ behavior: "smooth", block: "center" }), 80);
-      }
+      window.NextPulse.receiving?.openScanner?.({ actionMode: true });
     });
   }
 
