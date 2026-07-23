@@ -112,6 +112,23 @@ window.NextPulse.receiving = (() => {
     return Array.from(bySku.values());
   }
 
+  function normalizeBarcode(value) {
+    const raw = String(value || "").trim();
+    const digits = raw.replace(/\D/g, "");
+
+    if (digits === raw && [8, 12, 13, 14].includes(digits.length)) {
+      return digits.padStart(14, "0");
+    }
+
+    return raw.toUpperCase();
+  }
+
+  async function refreshScanCatalog() {
+    const rows = await window.NextPulse.api.get("/receiving/catalog");
+    scanCatalogItems = normalizeScanRows(Array.isArray(rows) ? rows : []);
+    return rows;
+  }
+
   function isFinishedGood(categoryCode) {
     const normalized = String(categoryCode || "").toUpperCase();
     return ["MAMUL", "FINISHED_GOOD", "FINISHED GOOD", "FG"].includes(normalized);
@@ -125,7 +142,7 @@ window.NextPulse.receiving = (() => {
     }
 
     try {
-      const rows = await window.NextPulse.api.get("/receiving/catalog");
+      const rows = await refreshScanCatalog();
       scanCatalogItems = normalizeScanRows(Array.isArray(rows) ? rows : []);
       catalogItems = normalizeCatalogRows(Array.isArray(rows) ? rows : []);
       hasLoaded = true;
@@ -583,7 +600,11 @@ window.NextPulse.receiving = (() => {
   }
 
   async function handleScannedValue(value) {
-    const item = scanCatalogItems.find((candidate) => candidate.skuCode === value || candidate.barcode === value);
+    const normalizedValue = normalizeBarcode(value);
+    const item = scanCatalogItems.find((candidate) =>
+      candidate.skuCode.toUpperCase() === String(value || "").trim().toUpperCase()
+      || normalizeBarcode(candidate.barcode) === normalizedValue
+    );
     if (!item) {
       const help = document.getElementById("receivingScanHelp");
       if (help) help.textContent = `Barcode ${value} is not assigned to an SKU.`;
@@ -607,7 +628,11 @@ window.NextPulse.receiving = (() => {
     const help = document.getElementById("receivingScanHelp");
     if (!sheet || !video) return;
 
-    await loadCatalog();
+    if (hasLoaded) {
+      await refreshScanCatalog();
+    } else {
+      await loadCatalog();
+    }
     scannerActionMode = Boolean(options.actionMode);
     scannedItem = null;
     stopScannerCamera();
