@@ -359,7 +359,9 @@ window.NextPulse.transfer = (() => {
     }
 
     if (isFinishedGood(item?.categoryCode)) {
-      from.value = from.value === bim ? bim : factory;
+      const factoryStock = sourceBaseStock(item, factory);
+      const bimStock = sourceBaseStock(item, bim);
+      from.value = from.value === bim || (factoryStock <= 0 && bimStock > 0) ? bim : factory;
       to.value = from.value === bim ? target : bim;
       constrainFinishedGoodRoute();
       return;

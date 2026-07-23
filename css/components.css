@@ -722,6 +722,7 @@
 .np-scan-result-actions i { color: var(--np-accent); font-size: 1.55rem; }
 .np-scan-result-actions span { font-weight: 740; }
 .np-scan-again { width: 100%; min-height: 46px; }
+.np-field-help { margin: -2px 0 0; color: var(--np-text-muted); font-size: .78rem; line-height: 1.45; }
 
 /* Operation-first home is shared by phone and desktop. */
 [data-page-panel="home"] > .np-hero,
