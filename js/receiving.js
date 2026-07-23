@@ -22,7 +22,7 @@ window.NextPulse.receiving = (() => {
     "RM-VANILIN-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
     "RM-KABARTMA-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
     "PKG-KOMBE-KABI-ADET": { packageUnit: "KOLI", unitsPerPack: 80, baseUnit: "ADET" },
-    "PKG-ETIKET-ADET": { packageUnit: "KOLI", innerUnit: "RULO", innerQtyPerPack: 12, baseQtyPerInner: 500, unitsPerPack: 6000, baseUnit: "ADET" },
+    "PKG-ETIKET-ADET": { packageUnit: "KOLI", innerUnit: "", innerQtyPerPack: 1, baseQtyPerInner: 4000, unitsPerPack: 4000, baseUnit: "ADET" },
     "PKG-KOLI-ADET": { packageUnit: "KOLI", unitsPerPack: 25, baseUnit: "ADET" },
     "PKG-SHRINK-RULO": { packageUnit: "KOLI", innerUnit: "RULO", innerQtyPerPack: 4, baseQtyPerInner: 1, unitsPerPack: 4, baseUnit: "RULO" },
     "PKG-BANT-RULO": { packageUnit: "KOLI", innerUnit: "RULO", innerQtyPerPack: 20, baseQtyPerInner: 1, unitsPerPack: 20, baseUnit: "RULO" },
