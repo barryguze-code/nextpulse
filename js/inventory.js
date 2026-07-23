@@ -553,7 +553,7 @@ window.NextPulse.inventory = (() => {
           ${renderMeasurements(item)}
           <div class="np-mobile-record-actions">
             <button class="np-primary-button" type="button" data-inventory-action="receive" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-inboxes"></i> Receive</button>
-            <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="adjust" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-box-arrow-up-right"></i> Use</button>
+            <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="adjust" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-clipboard2-pulse"></i> Adjust</button>
             <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="details" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-layout-sidebar-reverse"></i> Details</button>
           </div>
         </article>`).join("");
