@@ -147,10 +147,15 @@ window.NextPulse.transfer = (() => {
     }
 
     const query = search.value.trim().toLocaleLowerCase("tr-TR");
+    if (!query) {
+      results.hidden = true;
+      results.innerHTML = "";
+      return;
+    }
     const matches = catalogItems
-      .filter((item) => !query || [item.skuCode, item.description, item.categoryCode]
+      .filter((item) => [item.skuCode, item.description, item.categoryCode]
         .some((value) => String(value || "").toLocaleLowerCase("tr-TR").includes(query)))
-      .slice(0, query ? 12 : 6);
+      .slice(0, 12);
 
     if (catalogItems.length === 0) {
       results.innerHTML = `<div class="np-receiving-picker-state">No materials available.</div>`;
@@ -199,7 +204,7 @@ window.NextPulse.transfer = (() => {
     if (sku) sku.value = "";
     if (search) search.value = "";
     if (selected) selected.hidden = true;
-    if (results) results.hidden = false;
+    if (results) results.hidden = true;
     renderSkuResults();
     updateMode();
     updatePreview();
@@ -212,7 +217,7 @@ window.NextPulse.transfer = (() => {
     const selected = document.getElementById("transferSelectedSku");
     if (sku) sku.value = "";
     if (selected) selected.hidden = true;
-    if (results) results.hidden = false;
+    if (results) results.hidden = !document.getElementById("transferSkuSearch")?.value.trim();
     renderSkuResults();
     const query = document.getElementById("transferSkuSearch")?.value.trim() || "";
     const exact = catalogItems.find((item) => item.skuCode.toLocaleLowerCase("tr-TR") === query.toLocaleLowerCase("tr-TR"));
@@ -802,8 +807,11 @@ window.NextPulse.transfer = (() => {
     document.getElementById("transferSkuSearch")?.addEventListener("input", filterTransferSkuResults);
     document.getElementById("transferSkuSearch")?.addEventListener("focus", () => {
       const results = document.getElementById("transferSkuResults");
-      if (!selectedItem() && results) results.hidden = false;
+      const query = document.getElementById("transferSkuSearch")?.value.trim();
+      if (!selectedItem() && results) results.hidden = !query;
     });
+    document.getElementById("transferScanBarcode")?.addEventListener("click", () =>
+      window.NextPulse.receiving?.openScanner?.({ actionMode: true }));
 
     document.getElementById("transferFromLocation")?.addEventListener("change", () => {
       applyFinishedGoodDestinationFromSource();

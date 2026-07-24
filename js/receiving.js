@@ -13,7 +13,7 @@ window.NextPulse.receiving = (() => {
   let scannerActionMode = false;
   const packageDefaults = {
     "RM-UN-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
-    "RM-AYCICEK-20LT": { packageUnit: "KOLI", unitsPerPack: 20, baseUnit: "LT" },
+    "RM-AYCICEK-20LT": { packageUnit: "ADET", unitsPerPack: 20, baseUnit: "LT" },
     "RM-VITA-18LT": { packageUnit: "ADET", unitsPerPack: 18, baseUnit: "LT" },
     "RM-PUDRA-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
     "RM-SUSAM-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
@@ -22,8 +22,8 @@ window.NextPulse.receiving = (() => {
     "RM-VANILIN-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
     "RM-KABARTMA-25KG": { packageUnit: "TORBA", unitsPerPack: 25, baseUnit: "KG" },
     "PKG-KOMBE-KABI-ADET": { packageUnit: "KOLI", unitsPerPack: 80, baseUnit: "ADET" },
-    "PKG-ETIKET-ADET": { packageUnit: "KOLI", innerUnit: "", innerQtyPerPack: 1, baseQtyPerInner: 4000, unitsPerPack: 4000, baseUnit: "ADET" },
-    "PKG-KOLI-ADET": { packageUnit: "KOLI", unitsPerPack: 25, baseUnit: "ADET" },
+    "PKG-ETIKET-ADET": { packageUnit: "BALYA", innerUnit: "", innerQtyPerPack: 1, baseQtyPerInner: 4000, unitsPerPack: 4000, baseUnit: "ADET" },
+    "PKG-KOLI-ADET": { packageUnit: "BALYA", innerUnit: "", innerQtyPerPack: 1, baseQtyPerInner: 20, unitsPerPack: 20, baseUnit: "KOLI" },
     "PKG-SHRINK-RULO": { packageUnit: "KOLI", innerUnit: "RULO", innerQtyPerPack: 4, baseQtyPerInner: 1, unitsPerPack: 4, baseUnit: "RULO" },
     "PKG-BANT-RULO": { packageUnit: "KOLI", innerUnit: "RULO", innerQtyPerPack: 20, baseQtyPerInner: 1, unitsPerPack: 20, baseUnit: "RULO" },
     "PKG-STREC-RULO": { packageUnit: "KOLI", innerUnit: "RULO", innerQtyPerPack: 2, baseQtyPerInner: 1, unitsPerPack: 2, baseUnit: "RULO" },
@@ -39,10 +39,16 @@ window.NextPulse.receiving = (() => {
     return new Date().toISOString().slice(0, 10);
   }
 
-  function formatQuantity(value) {
+  function isWholeUnit(unit) {
+    return ["ADET", "AD", "KOLI", "KOLİ", "TORBA", "RULO", "PAKET", "PALET", "BALYA"]
+      .includes(String(unit || "").trim().toUpperCase());
+  }
+
+  function formatQuantity(value, unit = "") {
+    const digits = isWholeUnit(unit) ? 0 : 2;
     return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits
     }).format(Number(value || 0));
   }
 
@@ -213,7 +219,9 @@ window.NextPulse.receiving = (() => {
     search.value = item.skuCode;
     if (results) results.hidden = true;
     selected.hidden = false;
-    selected.innerHTML = `<span class="np-item-thumb">${escapeHtml(item.skuCode.slice(0, 2))}</span><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.skuCode)} · 1 ${escapeHtml(item.packageUnit)} = ${formatQuantity(item.unitsPerPack)} ${escapeHtml(item.baseUnit)}</small></span><button type="button" data-clear-receiving-sku aria-label="Choose another material"><i class="bi bi-x-lg"></i></button>`;
+    selected.innerHTML = `<span class="np-item-thumb">${escapeHtml(item.skuCode.slice(0, 2))}</span><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.skuCode)} · 1 ${escapeHtml(item.packageUnit)} = ${formatQuantity(item.unitsPerPack, item.baseUnit)} ${escapeHtml(item.baseUnit)}</small></span><button type="button" data-clear-receiving-sku aria-label="Choose another material"><i class="bi bi-x-lg"></i></button>`;
+    const clearButton = document.getElementById("receivingSkuClear");
+    if (clearButton) clearButton.hidden = false;
     updateReceivingPreview();
     const quantity = document.getElementById("receivingPackageQty");
     quantity?.focus();
@@ -229,6 +237,8 @@ window.NextPulse.receiving = (() => {
     if (sku) sku.value = "";
     if (search) search.value = "";
     if (selected) selected.hidden = true;
+    const clearButton = document.getElementById("receivingSkuClear");
+    if (clearButton) clearButton.hidden = true;
     if (results) results.hidden = true;
     renderSkuResults();
     updateReceivingPreview();
@@ -286,7 +296,7 @@ window.NextPulse.receiving = (() => {
   }
 
   function formatMeasurement(measurement) {
-    return `${formatQuantity(measurement.quantity)} ${measurement.unit}`;
+    return `${formatQuantity(measurement.quantity, measurement.unit)} ${measurement.unit}`;
   }
 
   function buildReceivingExplanation(item, packageQuantity) {
@@ -352,7 +362,7 @@ window.NextPulse.receiving = (() => {
 
     if (draftLines) {
       draftLines.innerHTML = lines.length
-        ? lines.map((line, index) => `<button type="button" data-remove-receiving-line="${index}" title="Remove ${escapeHtml(line.skuCode)}"><strong>${escapeHtml(line.skuCode)}</strong><span>${formatQuantity(line.packageQuantity)} ${escapeHtml(line.packageUnit)}</span><i class="bi bi-x"></i></button>`).join("")
+        ? lines.map((line, index) => `<button type="button" data-remove-receiving-line="${index}" title="Remove ${escapeHtml(line.skuCode)}"><strong>${escapeHtml(line.skuCode)}</strong><span>${formatQuantity(line.packageQuantity, line.packageUnit)} ${escapeHtml(line.packageUnit)}</span><i class="bi bi-x"></i></button>`).join("")
         : "";
     }
 
@@ -371,9 +381,9 @@ window.NextPulse.receiving = (() => {
         <td><strong>${escapeHtml(line.skuCode)}</strong></td>
         <td>${escapeHtml(line.description)}</td>
         <td>${escapeHtml(reasonLabels[line.reasonCode] || line.reasonCode)}</td>
-        <td class="text-end"><strong>${formatQuantity(line.packageQuantity)}</strong></td>
+        <td class="text-end"><strong>${formatQuantity(line.packageQuantity, line.packageUnit)}</strong></td>
         <td>${escapeHtml(line.packageUnit)}</td>
-        <td class="text-end"><strong>${formatQuantity(line.baseQuantity)}</strong></td>
+        <td class="text-end"><strong>${formatQuantity(line.baseQuantity, line.baseUnit)}</strong></td>
         <td>${escapeHtml(line.baseUnit)}</td>
         <td>${escapeHtml(line.notes || "")}</td>
         <td class="text-end">
@@ -389,8 +399,8 @@ window.NextPulse.receiving = (() => {
         <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(line.description)}</strong><span>${escapeHtml(line.skuCode)}</span></div><button class="np-row-action" type="button" data-remove-receiving-line="${index}" aria-label="Remove line"><i class="bi bi-trash"></i></button></div>
         <p class="np-mobile-record-copy">${escapeHtml(reasonLabels[line.reasonCode] || line.reasonCode)}${line.notes ? ` · ${escapeHtml(line.notes)}` : ""}</p>
         <div class="np-mobile-record-grid">
-          <div class="np-mobile-record-metric"><span>Packages</span><strong>${formatQuantity(line.packageQuantity)} ${escapeHtml(line.packageUnit)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Base quantity</span><strong>${formatQuantity(line.baseQuantity)} ${escapeHtml(line.baseUnit)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Packages</span><strong>${formatQuantity(line.packageQuantity, line.packageUnit)} ${escapeHtml(line.packageUnit)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Base quantity</span><strong>${formatQuantity(line.baseQuantity, line.baseUnit)} ${escapeHtml(line.baseUnit)}</strong></div>
         </div>
       </article>`).join("");
   }
@@ -737,6 +747,9 @@ window.NextPulse.receiving = (() => {
     updateNotesRequirement();
 
     document.getElementById("receivingSkuSearch")?.addEventListener("input", filterSkuResults);
+    document.getElementById("receivingSkuSearch")?.addEventListener("search", () => {
+      if (!document.getElementById("receivingSkuSearch")?.value) clearSelectedSku();
+    });
     document.getElementById("receivingSkuSearch")?.addEventListener("focus", () => {
       const results = document.getElementById("receivingSkuResults");
       const query = document.getElementById("receivingSkuSearch")?.value.trim();

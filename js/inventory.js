@@ -1011,6 +1011,8 @@ window.NextPulse.inventory = (() => {
     document.getElementById("inventoryCategoryFilter")?.addEventListener("change", render);
     document.getElementById("inventoryLocationFilter")?.addEventListener("change", render);
     document.getElementById("inventoryNonZeroOnly")?.addEventListener("change", render);
+    document.getElementById("inventoryScanBarcode")?.addEventListener("click", () =>
+      window.NextPulse.receiving?.openScanner?.({ actionMode: true }));
     document.getElementById("inventoryDrawerClose")?.addEventListener("click", closeDrawer);
     document.getElementById("inventoryDrawerBack")?.addEventListener("click", closeDrawer);
     document.getElementById("inventoryDrawerBackdrop")?.addEventListener("click", closeDrawer);

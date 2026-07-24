@@ -1130,7 +1130,7 @@
   .np-production-panel > .np-panel-header .np-panel-actions {
     position: fixed;
     right: 10px;
-    bottom: calc(74px + env(safe-area-inset-bottom));
+    bottom: calc(102px + env(safe-area-inset-bottom));
     left: 10px;
     z-index: 1055;
     display: flex;
@@ -1149,6 +1149,10 @@
     min-height: 48px;
     flex: 1 1 auto;
     border-radius: 11px;
+  }
+
+  .np-transfer-panel {
+    padding-bottom: calc(178px + env(safe-area-inset-bottom));
   }
 
   .np-production-panel > .np-panel-header .np-panel-actions .np-primary-button:disabled {
@@ -2438,6 +2442,14 @@
   gap: 8px;
 }
 
+.np-scan-search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.np-scan-search-row .np-search { min-width: 0; }
+
 .np-receiving-search {
   min-height: 48px;
   display: flex;
@@ -2456,10 +2468,24 @@
 }
 
 .np-field .np-receiving-search input {
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: 46px;
   padding: 0;
   border: 0;
   box-shadow: none;
+}
+
+.np-search-clear {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  color: var(--np-text-soft);
+  background: var(--np-surface-2);
+  border: 0;
+  border-radius: 10px;
 }
 
 .np-receiving-scan {
@@ -3075,7 +3101,7 @@
   }
 
   .np-receiving-panel {
-    padding: 16px 12px 84px;
+    padding: 16px 12px calc(178px + env(safe-area-inset-bottom));
     background: var(--np-bg);
     border: 0;
     box-shadow: none;
@@ -3088,7 +3114,7 @@
   .np-receiving-panel > .np-panel-header .np-panel-actions {
     position: fixed;
     right: 10px;
-    bottom: calc(74px + env(safe-area-inset-bottom));
+    bottom: calc(102px + env(safe-area-inset-bottom));
     left: 10px;
     z-index: 1055;
     grid-template-columns: minmax(92px, .35fr) minmax(0, 1fr);
@@ -3173,6 +3199,11 @@
   .np-receiving-sku-option { min-height: 72px; }
   .np-scan-sheet { align-items: end; padding: 10px 10px calc(84px + env(safe-area-inset-bottom)); }
   .np-scan-sheet-card { border-radius: 22px 22px 16px 16px; }
+
+  .np-scan-search-row,
+  .np-receiving-search-row {
+    grid-template-columns: minmax(0, 1fr) 92px;
+  }
 
   .np-panel-header {
     align-items: flex-start;
