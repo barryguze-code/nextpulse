@@ -610,6 +610,8 @@
   .np-mobile-operation-icon-transfer { background: #168aad; }
   .np-mobile-operation-icon-scan { background: #28965a; }
   .np-mobile-operation-icon-receive { background: #7a52c7; }
+  .np-mobile-operation-icon-inventory { background: #3975b7; }
+  .np-mobile-operation-icon-orders { background: #94632c; }
   .np-mobile-operation-chevron { color: var(--np-text-muted); }
 
   .np-mobile-more-section {
@@ -1895,6 +1897,16 @@
   color: var(--np-danger);
   background: rgba(223, 27, 65, 0.07);
   border-color: rgba(223, 27, 65, 0.22);
+}
+
+.np-current-batch-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.np-current-batch-actions .btn {
+  min-height: 44px;
+  justify-content: center;
 }
 
 .np-table tbody tr.is-stock-short {

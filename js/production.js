@@ -4,7 +4,6 @@ window.NextPulse.production = (() => {
   const DEFAULT_RECIPE_KEY = "nextpulse.production.defaultRecipeVersionId";
   let recipes = [];
   let openBatches = [];
-  let recentBatches = [];
   let currentBatch = null;
   let hasLoaded = false;
 
@@ -311,67 +310,6 @@ window.NextPulse.production = (() => {
     return String(status || "DRAFT").toLowerCase().replaceAll("_", "-");
   }
 
-  function renderRecentBatches() {
-    const list = document.getElementById("productionRecentBatchList");
-    const count = document.getElementById("productionRecentBatchCount");
-
-    if (count) {
-      count.textContent = `${recentBatches.length} ${recentBatches.length === 1 ? "batch" : "batches"}`;
-    }
-
-    if (!list) {
-      return;
-    }
-
-    if (recentBatches.length === 0) {
-      list.innerHTML = `
-        <div class="np-recent-batch-row is-empty">
-          Open production batches will appear here.
-        </div>
-      `;
-      return;
-    }
-
-    const currentBatchId = currentBatch?.batch?.productionBatchId || "";
-
-    list.innerHTML = recentBatches.map((batch) => {
-      const selected = batch.productionBatchId === currentBatchId ? " is-selected" : "";
-      const outputQuantity = Number(batch.actualOutputQuantity || batch.plannedOutputQuantity || 0);
-      const canCancel = batch.status === "DRAFT" || batch.status === "IN_PROGRESS";
-      return `
-        <div class="np-recent-batch-row${selected}">
-          <button class="np-recent-batch-open" type="button" data-production-recent-batch="${escapeHtml(batch.productionBatchId)}">
-            <span class="np-recent-batch-main">
-              <strong>${escapeHtml(batch.batchNumber)} · ${escapeHtml(batch.finishedDescription)}</strong>
-              <span>${escapeHtml(batch.lotNumber)} · ${escapeHtml(batch.productionDate || "")}</span>
-            </span>
-            <span class="np-recent-batch-side">
-              <span class="np-recent-batch-meta">${formatQuantity(outputQuantity)}</span>
-              <span class="np-batch-status is-${escapeHtml(statusClass(batch.status))}">${escapeHtml(statusLabel(batch.status))}</span>
-            </span>
-          </button>
-          ${canCancel ? `
-            <button class="np-recent-batch-cancel" type="button" data-production-cancel-batch="${escapeHtml(batch.productionBatchId)}" data-batch-number="${escapeHtml(batch.batchNumber)}" data-batch-status="${escapeHtml(batch.status)}" aria-label="Cancel batch ${escapeHtml(batch.batchNumber)}" title="Cancel batch">
-              <i class="bi bi-x-lg"></i>
-            </button>
-          ` : ""}
-        </div>
-      `;
-    }).join("");
-
-    list.querySelectorAll("[data-production-recent-batch]").forEach((button) => {
-      button.addEventListener("click", () => {
-        loadBatch(button.dataset.productionRecentBatch);
-      });
-    });
-
-    list.querySelectorAll("[data-production-cancel-batch]").forEach((button) => {
-      button.addEventListener("click", () => {
-        cancelOpenBatch(button.dataset.productionCancelBatch, button.dataset.batchNumber, button.dataset.batchStatus);
-      });
-    });
-  }
-
   async function loadOpenBatches() {
     try {
       openBatches = await window.NextPulse.api.get("/production/batches/open");
@@ -379,17 +317,6 @@ window.NextPulse.production = (() => {
     } catch (exception) {
       openBatches = [];
       renderOpenBatchOptions();
-      showMessage(exception.message || "Unable to load open production batches.", "error");
-    }
-  }
-
-  async function loadRecentBatches() {
-    try {
-      recentBatches = await window.NextPulse.api.get("/production/batches/recent");
-      renderRecentBatches();
-    } catch (exception) {
-      recentBatches = [];
-      renderRecentBatches();
       showMessage(exception.message || "Unable to load open production batches.", "error");
     }
   }
@@ -402,7 +329,6 @@ window.NextPulse.production = (() => {
     try {
       currentBatch = await window.NextPulse.api.get(`/production/batches/${productionBatchId}`);
       renderBatch();
-      renderRecentBatches();
       showMessage("");
     } catch (exception) {
       showMessage(exception.message || "Unable to load production batch.", "error");
@@ -414,16 +340,13 @@ window.NextPulse.production = (() => {
       return;
     }
 
-    const isInProgress = status === "IN_PROGRESS";
     const confirmed = await window.NextPulse.ui.confirmAction({
       type: "danger",
-      kicker: isInProgress ? "Production warning" : "Delete draft",
-      title: isInProgress ? "Cancel this active batch?" : "Delete this draft batch?",
+      kicker: "Delete draft",
+      title: "Delete this draft batch?",
       message: `${batchNumber || "This batch"} will be removed from active production work.`,
-      detail: isInProgress
-        ? "Posted inventory movements will remain in inventory and will not be reversed."
-        : "The draft has not posted inventory movements and can be safely removed.",
-      confirmLabel: isInProgress ? "Cancel active batch" : "Delete draft",
+      detail: "Any already-posted inventory movements remain in the inventory ledger.",
+      confirmLabel: "Delete draft",
       cancelLabel: "Keep batch"
     });
 
@@ -439,14 +362,39 @@ window.NextPulse.production = (() => {
         renderBatch();
       }
 
-      await Promise.allSettled([
-        loadOpenBatches(),
-        loadRecentBatches()
-      ]);
+      await loadOpenBatches();
       renderOpenBatchOptions();
-      showMessage("Production batch cancelled.", "success");
+      showMessage("Draft batch deleted.", "success");
     } catch (exception) {
-      showMessageAtTop(exception.message || "Unable to cancel production batch.", "error");
+      showMessageAtTop(exception.message || "Unable to delete draft batch.", "error");
+    }
+  }
+
+  async function revertCurrentBatchToDraft() {
+    const batch = currentBatch?.batch;
+    if (!batch?.productionBatchId || batch.status !== "IN_PROGRESS") return;
+
+    const confirmed = await window.NextPulse.ui.confirmAction({
+      type: "warning",
+      kicker: "Production correction",
+      title: "Return this batch to Draft?",
+      message: `${batch.batchNumber} will become editable for additional material preparation.`,
+      detail: "Existing inventory movements remain posted and traceable.",
+      confirmLabel: "Return to Draft",
+      cancelLabel: "Keep In Progress"
+    });
+
+    if (!confirmed) return;
+
+    try {
+      await window.NextPulse.api.post(`/production/batches/${batch.productionBatchId}/reopen`, {});
+      currentBatch = await window.NextPulse.api.get(`/production/batches/${batch.productionBatchId}`);
+      await loadOpenBatches();
+      renderBatch();
+      renderOpenBatchOptions();
+      showMessage("Batch returned to Draft.", "success");
+    } catch (exception) {
+      showMessageAtTop(exception.message || "Unable to return batch to Draft.", "error");
     }
   }
 
@@ -564,6 +512,9 @@ window.NextPulse.production = (() => {
     const contentStatus = document.getElementById("productionContentStatus");
     const contentLock = document.getElementById("productionContentLock");
     const createButton = document.querySelector("#productionForm button[type='submit']");
+    const batchActions = document.getElementById("productionCurrentBatchActions");
+    const deleteDraftButton = document.getElementById("deleteProductionDraft");
+    const revertDraftButton = document.getElementById("revertProductionDraft");
 
     if (!currentBatch) {
       [recipeInput, quantityInput, dateInput].forEach((input) => { if (input) input.disabled = false; });
@@ -596,12 +547,12 @@ window.NextPulse.production = (() => {
       if (completionFields) {
         completionFields.hidden = true;
       }
+      if (batchActions) batchActions.hidden = true;
       if (body) {
         body.innerHTML = `<tr><td colspan="5" class="np-empty-cell">Material requirements will appear here.</td></tr>`;
       }
       if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">Material requirements will appear here.</div>`;
       updateWorkflow("DRAFT");
-      renderRecentBatches();
       return;
     }
 
@@ -641,6 +592,9 @@ window.NextPulse.production = (() => {
     if (completeButton) {
       completeButton.disabled = batch.status !== "IN_PROGRESS";
     }
+    if (batchActions) batchActions.hidden = !["DRAFT", "IN_PROGRESS"].includes(batch.status);
+    if (deleteDraftButton) deleteDraftButton.hidden = batch.status !== "DRAFT";
+    if (revertDraftButton) revertDraftButton.hidden = batch.status !== "IN_PROGRESS";
 
     updateWorkflow(batch.status);
     syncCompletionFields(batch);
@@ -791,7 +745,6 @@ window.NextPulse.production = (() => {
       showMessage("Production area already has enough planned materials for this batch.", "success");
     }
 
-    renderRecentBatches();
   }
 
   async function loadRecipes() {
@@ -850,10 +803,7 @@ window.NextPulse.production = (() => {
 
     try {
       currentBatch = await window.NextPulse.api.post("/production/batches", payload);
-      await Promise.allSettled([
-        loadOpenBatches(),
-        loadRecentBatches()
-      ]);
+      await loadOpenBatches();
       renderBatch();
       renderOpenBatchOptions();
       showMessage("Draft production batch created.", "success");
@@ -884,10 +834,7 @@ window.NextPulse.production = (() => {
     try {
       const response = await window.NextPulse.api.post(`/production/batches/${currentBatch.batch.productionBatchId}/prepare-materials`, buildPreparePayload());
       currentBatch = await window.NextPulse.api.get(`/production/batches/${currentBatch.batch.productionBatchId}`);
-      await Promise.allSettled([
-        loadOpenBatches(),
-        loadRecentBatches()
-      ]);
+      await loadOpenBatches();
       renderBatch();
       renderOpenBatchOptions();
       showMessage(
@@ -933,7 +880,6 @@ window.NextPulse.production = (() => {
       currentBatch = await window.NextPulse.api.get(`/production/batches/${currentBatch.batch.productionBatchId}`);
       await Promise.allSettled([
         loadOpenBatches(),
-        loadRecentBatches(),
         window.NextPulse.inventory?.refresh?.()
       ]);
       renderBatch();
@@ -1037,12 +983,18 @@ window.NextPulse.production = (() => {
     document.getElementById("prepareProductionMaterials")?.addEventListener("click", prepareMaterials);
     document.getElementById("completeProductionBatch")?.addEventListener("click", completeProduction);
     document.getElementById("resetProduction")?.addEventListener("click", reset);
+    document.getElementById("deleteProductionDraft")?.addEventListener("click", () => {
+      const batch = currentBatch?.batch;
+      if (batch?.status === "DRAFT") {
+        cancelOpenBatch(batch.productionBatchId, batch.batchNumber, batch.status);
+      }
+    });
+    document.getElementById("revertProductionDraft")?.addEventListener("click", revertCurrentBatchToDraft);
 
     document.addEventListener("nextpulse:page-change", (event) => {
       if (event.detail?.page === "production") {
         loadRecipes();
         loadOpenBatches();
-        loadRecentBatches();
         window.setTimeout(() => {
           document.getElementById("productionRecipe")?.focus();
         }, 0);
@@ -1052,7 +1004,6 @@ window.NextPulse.production = (() => {
 
   return {
     init,
-    loadRecipes,
-    loadRecentBatches
+    loadRecipes
   };
 })();
