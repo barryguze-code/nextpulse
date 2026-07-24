@@ -134,7 +134,7 @@ window.NextPulse.production = (() => {
   function hasInsufficientTransfer() {
     return Array.from(document.querySelectorAll("[data-production-transfer]"))
       .filter((input) => input.offsetParent !== null)
-      .some((input) => isFactoryTransferShort(input) || isTotalStockShort(input) || isTransferTooLow(input));
+      .some((input) => isFactoryTransferShort(input));
   }
 
   function isConsumptionTooHigh(input) {
@@ -151,16 +151,12 @@ window.NextPulse.production = (() => {
   }
 
   function stockStatusMessage(input) {
-    if (isTotalStockShort(input)) {
-      return "Total Factory + Production Area stock is not enough to start production.";
-    }
-
     if (isFactoryTransferShort(input)) {
       return "Factory stock is not enough for the selected transfer quantity.";
     }
 
     if (isTransferTooLow(input)) {
-      return "Selected transfer packages do not cover the remaining production need.";
+      return "Partial preparation. The remaining quantity can be prepared later.";
     }
 
     if (isTransferNotNeeded(input)) {
@@ -183,24 +179,29 @@ window.NextPulse.production = (() => {
       const requiredCell = row?.querySelector("[data-production-required-cell]");
       const statusIcon = row?.querySelector("[data-production-stock-status]");
       const message = stockStatusMessage(input);
+      const partialTransfer = transferLow || totalShort;
 
-      row?.classList.toggle("is-stock-short", transferShort || totalShort || transferLow);
-      input.classList.toggle("is-danger", transferShort || totalShort || transferLow);
+      row?.classList.toggle("is-stock-short", transferShort);
+      row?.classList.toggle("is-partial-transfer", !transferShort && partialTransfer);
+      input.classList.toggle("is-danger", transferShort);
       factoryCell?.classList.toggle("is-danger", transferShort);
       productionCell?.classList.remove("is-danger");
-      requiredCell?.classList.toggle("is-danger", totalShort);
+      requiredCell?.classList.remove("is-danger");
 
       if (statusIcon) {
-        statusIcon.classList.toggle("is-danger", transferShort || totalShort || transferLow);
-        statusIcon.classList.toggle("is-no-need", transferNotNeeded && !transferShort && !totalShort && !transferLow);
-        statusIcon.classList.toggle("is-ready", !transferNotNeeded && !transferShort && !totalShort && !transferLow);
+        statusIcon.classList.toggle("is-danger", transferShort);
+        statusIcon.classList.toggle("is-partial", !transferShort && partialTransfer);
+        statusIcon.classList.toggle("is-no-need", transferNotNeeded && !transferShort && !partialTransfer);
+        statusIcon.classList.toggle("is-ready", !transferNotNeeded && !transferShort && !partialTransfer);
         statusIcon.title = message;
         statusIcon.setAttribute("aria-label", message);
-        statusIcon.innerHTML = transferShort || totalShort || transferLow
+        statusIcon.innerHTML = transferShort
           ? `<i class="bi bi-exclamation-triangle-fill"></i>`
+          : (partialTransfer
+            ? `<i class="bi bi-clock-history"></i>`
           : (transferNotNeeded
             ? `<i class="bi bi-dash-circle-fill"></i>`
-            : `<i class="bi bi-check-circle-fill"></i>`);
+            : `<i class="bi bi-check-circle-fill"></i>`));
       }
     });
   }
@@ -870,7 +871,7 @@ window.NextPulse.production = (() => {
     const originalText = button?.innerHTML;
 
     if (hasInsufficientTransfer()) {
-      showMessageAtTop("Stock is not enough for one or more material lines. Check Factory and Production Area stock before starting.", "error");
+      showMessageAtTop("A transfer quantity is greater than the available Factory stock.", "error");
       updateTransferWarnings();
       return;
     }
@@ -891,7 +892,9 @@ window.NextPulse.production = (() => {
       renderOpenBatchOptions();
       showMessage(
         response.transactionNumber
-          ? `Materials prepared. Transfer ${response.transactionNumber} posted.`
+          ? (response.status === "DRAFT"
+            ? `Partial materials prepared. Transfer ${response.transactionNumber} posted; the batch remains Draft until staging is complete.`
+            : `Materials prepared. Transfer ${response.transactionNumber} posted.`)
           : "Materials already available in production area.",
         "success"
       );

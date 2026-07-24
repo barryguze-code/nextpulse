@@ -1155,6 +1155,10 @@
     padding-bottom: calc(178px + env(safe-area-inset-bottom));
   }
 
+  .np-production-panel {
+    padding-bottom: calc(190px + env(safe-area-inset-bottom));
+  }
+
   .np-production-panel > .np-panel-header .np-panel-actions .np-primary-button:disabled {
     display: none;
   }
@@ -1873,6 +1877,12 @@
   color: #2e8b2f;
   background: rgba(124, 207, 53, 0.12);
   border-color: rgba(124, 207, 53, 0.35);
+}
+
+.np-status-icon.is-partial {
+  color: #a16207;
+  background: #fff7df;
+  border-color: rgba(217, 145, 23, .32);
 }
 
 .np-status-icon.is-no-need {
