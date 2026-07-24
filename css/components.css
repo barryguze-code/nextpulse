@@ -38,11 +38,11 @@
 .np-production-panel { display:flex; flex-direction:column; }
 .np-production-panel>.np-panel-header { order:0; }
 .np-production-panel>.np-panel-top-alert { order:1; }
-.np-production-panel>.np-production-content-card { order:2; }
+.np-production-panel>.np-workspace-grid { order:2; }
 .np-production-panel>.np-workflow { order:3; }
-.np-production-panel>.np-workspace-grid { order:4; }
 .np-production-panel>.np-recent-batches { order:5; }
 .np-production-panel>.np-table-wrap,.np-production-panel>.np-mobile-record-list { order:6; }
+.np-production-content-card.np-field-wide { margin-bottom:0; }
 
 @media (max-width:767.98px) {
   .np-context-bar { align-items:stretch; flex-direction:column; margin:-2px 0 12px; padding:10px 12px; }

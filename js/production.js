@@ -515,8 +515,12 @@ window.NextPulse.production = (() => {
     const batchActions = document.getElementById("productionCurrentBatchActions");
     const deleteDraftButton = document.getElementById("deleteProductionDraft");
     const revertDraftButton = document.getElementById("revertProductionDraft");
+    const planLabel = document.getElementById("productionPlanLabel");
+    const planTitle = document.getElementById("productionPlanTitle");
 
     if (!currentBatch) {
+      if (planLabel) planLabel.textContent = "New Batch";
+      if (planTitle) planTitle.textContent = "Plan production";
       [recipeInput, quantityInput, dateInput].forEach((input) => { if (input) input.disabled = false; });
       if (contentTitle) contentTitle.textContent = "What are you making?";
       if (contentStatus) {
@@ -557,6 +561,8 @@ window.NextPulse.production = (() => {
     }
 
     const batch = currentBatch.batch;
+    if (planLabel) planLabel.textContent = "Selected Batch";
+    if (planTitle) planTitle.textContent = "Continue production";
     const materials = currentBatch.materials || [];
     const suggestedLines = materials.filter((line) => Number(line.suggestedIssueContainerQuantity || 0) > 0);
 
@@ -996,7 +1002,7 @@ window.NextPulse.production = (() => {
         loadRecipes();
         loadOpenBatches();
         window.setTimeout(() => {
-          document.getElementById("productionRecipe")?.focus();
+          document.getElementById("productionOpenBatch")?.focus();
         }, 0);
       }
     });
