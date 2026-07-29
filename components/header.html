@@ -14,9 +14,14 @@
   </div>
 
   <div class="np-header-actions">
-    <button class="np-icon-button" type="button" aria-label="Notifications">
+    <button class="np-icon-button np-notification-button" type="button" id="notificationButton" aria-label="Notifications" aria-expanded="false">
       <i class="bi bi-bell"></i>
+      <span class="np-notification-badge" id="notificationBadge" hidden>0</span>
     </button>
+    <aside class="np-notification-popover" id="notificationPopover" hidden>
+      <div class="np-notification-head"><strong>Inventory alerts</strong><button type="button" id="notificationRefresh"><i class="bi bi-arrow-clockwise"></i></button></div>
+      <div id="notificationList"><p>Loading alerts…</p></div>
+    </aside>
     <button class="np-user-button" type="button" aria-label="User menu">
       <span class="np-user-avatar" id="userAvatar">U</span>
       <span class="np-user-meta d-none d-sm-grid">

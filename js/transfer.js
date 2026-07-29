@@ -352,17 +352,29 @@ window.NextPulse.transfer = (() => {
     Array.from(to.options).forEach((option) => { option.disabled = false; });
     if (!isFinishedSelected()) return;
 
-    const allowedSources = new Set(["FACTORY", "BIM_INTERMEDIATE"]);
+    const item = selectedItem();
+    const allowedSources = new Set(
+      item?.locationRows
+        ?.filter((row) => Number(row.currentBaseQuantity || 0) > 0)
+        .map((row) => row.locationCode) || []
+    );
     Array.from(from.options).forEach((option) => {
       if (option.value) option.disabled = !allowedSources.has(option.value);
     });
-    if (!allowedSources.has(from.value)) from.value = "FACTORY";
+    const production = findLocationCode("PRODUCTION_AREA", "ÜRETIM", "URETIM");
+    if (!allowedSources.has(from.value)) {
+      from.value = allowedSources.has(production)
+        ? production
+        : (Array.from(allowedSources)[0] || "");
+    }
 
-    const requiredDestination = from.value === "BIM_INTERMEDIATE" ? "TARGET_3PL" : "BIM_INTERMEDIATE";
+    const allowedDestinations = new Set(["BIM_INTERMEDIATE", "TARGET_3PL"]);
     Array.from(to.options).forEach((option) => {
-      if (option.value) option.disabled = option.value !== requiredDestination;
+      if (option.value) option.disabled = !allowedDestinations.has(option.value);
     });
-    to.value = requiredDestination;
+    if (!allowedDestinations.has(to.value) || to.value === from.value) {
+      to.value = from.value === "BIM_INTERMEDIATE" ? "TARGET_3PL" : "BIM_INTERMEDIATE";
+    }
   }
 
   function applySmartLocationDefaults() {
@@ -384,9 +396,9 @@ window.NextPulse.transfer = (() => {
     }
 
     if (isFinishedGood(item?.categoryCode)) {
-      const factoryStock = sourceBaseStock(item, factory);
-      const bimStock = sourceBaseStock(item, bim);
-      from.value = from.value === bim || (factoryStock <= 0 && bimStock > 0) ? bim : factory;
+      const productionStock = sourceBaseStock(item, production);
+      const positiveLocation = item.locationRows.find((row) => Number(row.currentBaseQuantity || 0) > 0)?.locationCode;
+      from.value = productionStock > 0 ? production : (positiveLocation || "");
       to.value = from.value === bim ? target : bim;
       constrainFinishedGoodRoute();
       return;
@@ -411,7 +423,7 @@ window.NextPulse.transfer = (() => {
 
     if (bim && target && from.value === bim) {
       to.value = target;
-    } else if (from.value === "FACTORY") {
+    } else {
       to.value = bim;
     }
     constrainFinishedGoodRoute();
@@ -478,6 +490,7 @@ window.NextPulse.transfer = (() => {
     const from = selectedFromLocation();
     const to = selectedToLocation();
     const notes = document.getElementById("transferLineNotes")?.value.trim() || "";
+    const palletLabel = document.getElementById("transferPalletLabel")?.value.trim() || "";
 
     if (!item || !from || !to || from === to) {
       return null;
@@ -509,7 +522,7 @@ window.NextPulse.transfer = (() => {
         boxesPerPallet: boxQty,
         unitsPerBox: unitQty,
         summary: `${formatQuantity(palletQty, "PALET")} PALET x ${formatQuantity(boxQty, "KOLI")} KOLI x ${formatQuantity(unitQty, getBaseUnit(item))} ${getBaseUnit(item)}`,
-        notes
+        notes: [palletLabel, notes].filter(Boolean).join(" · ")
       };
     }
 
@@ -614,10 +627,11 @@ window.NextPulse.transfer = (() => {
         return;
       }
 
-      const approvedRoute = (from.value === "FACTORY" && to.value === "BIM_INTERMEDIATE")
-        || (from.value === "BIM_INTERMEDIATE" && to.value === "TARGET_3PL");
+      const approvedRoute = ["BIM_INTERMEDIATE", "TARGET_3PL"].includes(to.value)
+        && from.value !== to.value
+        && sourceBaseStock(item, from.value) > 0;
       if (!approvedRoute) {
-        showMessage("Finished goods can move only Fabrika → BIM Ara Depo or BIM Ara Depo → Hedef.", "error");
+        showMessage("Finished goods must move from a location with stock to BIM Ara Depo or Hedef.", "error");
         return;
       }
     }
@@ -643,6 +657,7 @@ window.NextPulse.transfer = (() => {
 
     mergeOrAddLine(line);
     document.getElementById("transferLineNotes").value = "";
+    document.getElementById("transferPalletLabel").value = "";
     renderLines();
     clearTransferSku();
   }
@@ -781,6 +796,7 @@ window.NextPulse.transfer = (() => {
     document.getElementById("transferReference").value = "";
     document.getElementById("transferNotes").value = "";
     document.getElementById("transferLineNotes").value = "";
+    document.getElementById("transferPalletLabel").value = "";
     document.getElementById("transferPackageQty").value = "1";
     document.getElementById("transferPalletQty").value = "1";
     document.getElementById("transferBoxesPerPallet").value = "250";

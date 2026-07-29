@@ -8,7 +8,17 @@ window.NextPulse.orders = (() => {
 
   const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#039;");
   const formatDate = (value) => value ? new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`)) : "—";
-  const statusLabel = (status) => ({ IMPORTED: "Imported", CONFIRMED: "Confirmed", IN_PROGRESS: "In progress", FULFILLED: "Fulfilled", CANCELLED: "Cancelled" })[status] || status || "Unknown";
+  const statusLabel = (status) => ({ IMPORTED: "Imported", RESERVED: "Reserved", CLOSED: "Closed", CONFIRMED: "Confirmed", IN_PROGRESS: "In progress", FULFILLED: "Fulfilled", CANCELLED: "Cancelled" })[status] || status || "Unknown";
+
+  function actionMarkup(detail) {
+    if (detail.orderStatus === "IMPORTED") {
+      return `<button class="np-primary-button" type="button" data-order-action="reserve" data-order-id="${detail.salesOrderId}"><i class="bi bi-box-arrow-in-down"></i> Fulfill / Reserve from Hedef</button>`;
+    }
+    if (detail.orderStatus === "RESERVED") {
+      return `<button class="np-primary-button" type="button" data-order-action="close" data-order-id="${detail.salesOrderId}"><i class="bi bi-check2-circle"></i> Close & Ship Order</button>`;
+    }
+    return "";
+  }
 
   function showMessage(message, type = "") {
     const element = document.getElementById("ordersMessage");
@@ -22,13 +32,13 @@ window.NextPulse.orders = (() => {
     const search = document.getElementById("ordersSearch")?.value.trim().toLowerCase() || "";
     const status = document.getElementById("ordersStatusFilter")?.value || "";
     return orders.filter((order) => {
-      const haystack = [order.orderNumber, order.externalOrderNumber, order.customerName, order.sourceFilename].join(" ").toLowerCase();
+      const haystack = [order.orderNumber, order.externalOrderNumber, order.customerName, order.customerBranch, order.shippingAddress, order.sourceFilename].join(" ").toLowerCase();
       return (!search || haystack.includes(search)) && (!status || order.orderStatus === status);
     });
   }
 
   function updateStats() {
-    const open = orders.filter((order) => !["FULFILLED", "CANCELLED"].includes(order.orderStatus));
+    const open = orders.filter((order) => !["CLOSED", "FULFILLED", "CANCELLED"].includes(order.orderStatus));
     const delivery = open.map((order) => order.requestedDeliveryDate).filter(Boolean).sort()[0];
     document.getElementById("ordersTotal").textContent = orders.length;
     document.getElementById("ordersOpen").textContent = open.length;
@@ -49,7 +59,7 @@ window.NextPulse.orders = (() => {
     body.innerHTML = rows.map((order) => `
       <tr data-order-row="${order.salesOrderId}">
         <td><span class="np-order-number"><strong>${escapeHtml(order.orderNumber)}</strong><small>${escapeHtml(order.externalOrderNumber)}</small></span></td>
-        <td>${escapeHtml(order.customerName)}</td><td>${formatDate(order.orderDate)}</td><td><strong>${formatDate(order.requestedDeliveryDate)}</strong></td>
+        <td>${escapeHtml(order.customerName)}<br><small>${escapeHtml(order.customerBranch || "")}</small></td><td>${formatDate(order.orderDate)}</td><td><strong>${formatDate(order.requestedDeliveryDate)}</strong></td>
         <td><span class="np-order-status" data-status="${escapeHtml(order.orderStatus)}">${escapeHtml(statusLabel(order.orderStatus))}</span></td>
         <td class="text-end">${Number(order.lineCount || 0)}</td>
         <td><span class="np-order-source"><i class="bi bi-file-earmark-pdf"></i> Email PDF<br><small>${escapeHtml(order.sourceFilename)}</small></span></td>
@@ -58,7 +68,7 @@ window.NextPulse.orders = (() => {
 
     if (mobileList) mobileList.innerHTML = rows.map((order) => `
       <article class="np-mobile-record-card" data-mobile-order="${order.salesOrderId}">
-        <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(order.orderNumber)}</strong><span>${escapeHtml(order.customerName)} · ${escapeHtml(order.externalOrderNumber)}</span></div><span class="np-order-status" data-status="${escapeHtml(order.orderStatus)}">${escapeHtml(statusLabel(order.orderStatus))}</span></div>
+        <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(order.orderNumber)}</strong><span>${escapeHtml(order.customerBranch || order.customerName)} · ${escapeHtml(order.externalOrderNumber)}</span></div><span class="np-order-status" data-status="${escapeHtml(order.orderStatus)}">${escapeHtml(statusLabel(order.orderStatus))}</span></div>
         <div class="np-mobile-record-grid">
           <div class="np-mobile-record-metric"><span>Delivery</span><strong>${formatDate(order.requestedDeliveryDate)}</strong></div>
           <div class="np-mobile-record-metric"><span>Order date</span><strong>${formatDate(order.orderDate)}</strong></div>
@@ -81,7 +91,7 @@ window.NextPulse.orders = (() => {
     try {
       const detail = await window.NextPulse.api.get(`/orders/${orderId}`);
       row.querySelector("td").innerHTML = detail.lines?.length
-        ? `<div class="np-order-lines">${detail.lines.map((line) => `<div class="np-order-line"><strong>${escapeHtml(line.externalItemCode || `Line ${line.lineNumber}`)}</strong><span>${escapeHtml(line.itemDescription)}</span><span>${Number(line.orderedQuantity).toLocaleString("tr-TR")} ${escapeHtml(line.unitOfMeasure)}</span></div>`).join("")}</div>`
+        ? `<div class="np-order-delivery"><strong><i class="bi bi-geo-alt"></i> ${escapeHtml(detail.customerBranch || "Delivery location")}</strong><span>${escapeHtml(detail.shippingAddress || "Address not available")}</span></div><div class="np-order-lines">${detail.lines.map((line) => `<div class="np-order-line"><strong>${escapeHtml(line.externalItemCode || `Line ${line.lineNumber}`)}</strong><span>${escapeHtml(line.itemDescription)}</span><span>${Number(line.orderedQuantity).toLocaleString("tr-TR")} ${escapeHtml(line.unitOfMeasure)}</span></div>`).join("")}</div><div class="np-form-actions">${actionMarkup(detail)}</div>`
         : `<div class="np-empty-state-compact">No order lines found.</div>`;
     } catch (error) { row.querySelector("td").textContent = error.message || "Unable to load order details."; }
   }
@@ -94,7 +104,9 @@ window.NextPulse.orders = (() => {
     container.innerHTML = `<div class="np-mobile-record-copy">Loading order lines…</div>`;
     try {
       const detail = await window.NextPulse.api.get(`/orders/${orderId}`);
-      container.innerHTML = detail.lines?.length ? `<div class="np-order-lines">${detail.lines.map((line) => `<div class="np-order-line"><strong>${escapeHtml(line.externalItemCode || `Line ${line.lineNumber}`)}</strong><span>${escapeHtml(line.itemDescription)}</span><span>${Number(line.orderedQuantity).toLocaleString("tr-TR")} ${escapeHtml(line.unitOfMeasure)}</span></div>`).join("")}</div>` : `<div class="np-mobile-empty">No order lines found.</div>`;
+      container.innerHTML = detail.lines?.length
+        ? `<div class="np-order-delivery"><strong><i class="bi bi-geo-alt"></i> ${escapeHtml(detail.customerBranch || "Delivery location")}</strong><span>${escapeHtml(detail.shippingAddress || "Address not available")}</span></div><div class="np-order-lines">${detail.lines.map((line) => `<div class="np-order-line"><strong>${escapeHtml(line.externalItemCode || `Line ${line.lineNumber}`)}</strong><span>${escapeHtml(line.itemDescription)}</span><span>${Number(line.orderedQuantity).toLocaleString("tr-TR")} ${escapeHtml(line.unitOfMeasure)}</span></div>`).join("")}</div><div class="np-form-actions">${actionMarkup(detail)}</div>`
+        : `<div class="np-mobile-empty">No order lines found.</div>`;
     } catch (error) { container.textContent = error.message || "Unable to load order details."; }
   }
 
@@ -105,6 +117,26 @@ window.NextPulse.orders = (() => {
     body.innerHTML = `<tr><td colspan="8" class="np-empty-cell">Loading orders…</td></tr>`;
     try { orders = await window.NextPulse.api.get("/orders"); loaded = true; render(); }
     catch (error) { body.innerHTML = `<tr><td colspan="8" class="np-empty-cell">Orders could not be loaded.</td></tr>`; showMessage(error.message, "error"); }
+  }
+
+  async function runOrderAction(action, orderId) {
+    const label = action === "reserve" ? "reserve this order from Hedef" : "close and ship this order";
+    const confirmed = await window.NextPulse.ui.confirmAction({
+      type: action === "reserve" ? "warning" : "success",
+      kicker: action === "reserve" ? "Inventory reservation" : "Shipment confirmation",
+      title: action === "reserve" ? "Reserve order stock?" : "Close this order?",
+      message: `This will ${label} and post the inventory ledger movement.`,
+      confirmLabel: action === "reserve" ? "Reserve stock" : "Close & ship",
+      cancelLabel: "Cancel"
+    });
+    if (!confirmed) return;
+    try {
+      const result = await window.NextPulse.api.postEmpty(`/orders/${orderId}/${action}`);
+      showMessage(`${result.boxQuantity} KOLİ · ${result.cookieQuantity} ADET posted as ${result.transactionNumber}.`, "success");
+      await Promise.all([loadOrders(true), window.NextPulse.inventory?.refresh?.()]);
+    } catch (error) {
+      showMessage(error.message || "Order inventory action failed.", "error");
+    }
   }
 
   async function importGmail() {
@@ -129,6 +161,10 @@ window.NextPulse.orders = (() => {
     document.getElementById("ordersStatusFilter")?.addEventListener("change", render);
     document.getElementById("ordersTableBody")?.addEventListener("click", (event) => { const row = event.target.closest("[data-order-row]"); if (row) toggleDetail(row.dataset.orderRow); });
     document.getElementById("ordersMobileList")?.addEventListener("click", (event) => { const button = event.target.closest("[data-mobile-order-open]"); if (button) toggleMobileDetail(button.dataset.mobileOrderOpen); });
+    document.addEventListener("click", (event) => {
+      const action = event.target.closest("[data-order-action]");
+      if (action) runOrderAction(action.dataset.orderAction, action.dataset.orderId);
+    });
     document.addEventListener("nextpulse:page-change", (event) => { if (event.detail?.page === "orders") loadOrders(); });
   }
 

@@ -1,6 +1,7 @@
 window.NextPulse = window.NextPulse || {};
 
 window.NextPulse.ui = (() => {
+  const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#039;");
   const FAVORITES_KEY = "nextpulse.favoriteModules";
   const SIDEBAR_COLLAPSED_KEY = "nextpulse.sidebarCollapsed";
   const permanentFavoriteKeys = ["home"];
@@ -9,6 +10,7 @@ window.NextPulse.ui = (() => {
   let currentPage = "home";
   let dialogResolver = null;
   let dialogPreviousFocus = null;
+  let inventoryAlerts = [];
   const pageFocusTargets = {
     inventory: "inventorySearch",
     receiving: "receivingSkuSearch",
@@ -88,6 +90,38 @@ window.NextPulse.ui = (() => {
         close();
       }
     });
+  }
+
+  async function loadInventoryAlerts() {
+    const list = document.getElementById("notificationList");
+    const badge = document.getElementById("notificationBadge");
+    try {
+      inventoryAlerts = await window.NextPulse.api.get("/inventory/alerts");
+      if (badge) {
+        badge.hidden = inventoryAlerts.length === 0;
+        badge.textContent = inventoryAlerts.length > 99 ? "99+" : String(inventoryAlerts.length);
+      }
+      if (list) {
+        list.innerHTML = inventoryAlerts.length
+          ? inventoryAlerts.map((alert) => `<button class="np-notification-item ${alert.severity === "OUT_OF_STOCK" ? "is-out" : "is-low"}" type="button" data-page="inventory"><i class="bi ${alert.severity === "OUT_OF_STOCK" ? "bi-x-octagon" : "bi-exclamation-triangle"}"></i><span><strong>${escapeHtml(alert.description)}</strong><small>${alert.severity === "OUT_OF_STOCK" ? "Out of stock" : "Low inventory"} · ${Number(alert.currentQuantity).toLocaleString("tr-TR")} / ${Number(alert.criticalQuantity).toLocaleString("tr-TR")} ${escapeHtml(alert.unit)}</small></span></button>`).join("")
+          : `<p class="np-notification-empty"><i class="bi bi-check-circle"></i> Inventory levels are healthy.</p>`;
+      }
+    } catch (error) {
+      if (list) list.textContent = error.message || "Alerts could not be loaded.";
+    }
+  }
+
+  function setupNotifications() {
+    const button = document.getElementById("notificationButton");
+    const popover = document.getElementById("notificationPopover");
+    button?.addEventListener("click", () => {
+      const opening = Boolean(popover?.hidden);
+      if (popover) popover.hidden = !opening;
+      button.setAttribute("aria-expanded", String(opening));
+      if (opening) loadInventoryAlerts();
+    });
+    document.getElementById("notificationRefresh")?.addEventListener("click", loadInventoryAlerts);
+    loadInventoryAlerts();
   }
 
   function updateCollapseButtons(isCollapsed) {
@@ -492,6 +526,7 @@ window.NextPulse.ui = (() => {
     setupNavigationState();
     setupMobileOperations();
     setupHealthCheck();
+    setupNotifications();
     setupLogout();
     setupDialog();
     setupValidationCleanup();
