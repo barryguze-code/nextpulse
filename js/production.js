@@ -490,10 +490,30 @@ window.NextPulse.production = (() => {
     }
 
     if (goodInput.dataset.batchId !== batch.productionBatchId) {
-      goodInput.value = Number(batch.actualOutputQuantity || batch.plannedOutputQuantity || 0);
       wasteInput.value = 0;
       goodInput.dataset.batchId = batch.productionBatchId;
       wasteInput.dataset.batchId = batch.productionBatchId;
+    }
+
+    syncGoodOutputFromWaste();
+  }
+
+  function syncGoodOutputFromWaste() {
+    const goodInput = document.getElementById("productionGoodQuantity");
+    const wasteInput = document.getElementById("productionWasteQuantity");
+    const preview = document.getElementById("productionYieldPreview");
+    const planned = numericValue(currentBatch?.batch?.plannedOutputQuantity);
+    const waste = numericValue(wasteInput?.value);
+    const good = Math.max(planned - waste, 0);
+    const unit = currentBatch?.batch?.outputUnit || "ADET";
+
+    if (goodInput) {
+      goodInput.value = String(good);
+    }
+
+    if (preview) {
+      preview.textContent = `${formatQuantity(planned)} planned − ${formatQuantity(waste)} Fire/Zayi = ${formatQuantity(good)} good ${unit}.`;
+      preview.classList.toggle("is-error", waste >= planned && planned > 0);
     }
   }
 
@@ -996,7 +1016,10 @@ window.NextPulse.production = (() => {
       });
     });
     document.getElementById("productionGoodQuantity")?.addEventListener("input", () => showMessage(""));
-    document.getElementById("productionWasteQuantity")?.addEventListener("input", () => showMessage(""));
+    document.getElementById("productionWasteQuantity")?.addEventListener("input", () => {
+      syncGoodOutputFromWaste();
+      showMessage("");
+    });
     document.getElementById("productionOpenBatch")?.addEventListener("change", (event) => {
       loadBatch(event.target.value);
     });

@@ -308,14 +308,15 @@
                     </div>
                     <div class="np-completion-fields">
                       <label class="np-field">
-                        <span>Good cookies</span>
-                        <input type="number" id="productionGoodQuantity" min="1" step="1" inputmode="numeric">
+                        <span>Good cookies (automatic)</span>
+                        <input type="number" id="productionGoodQuantity" min="1" step="1" inputmode="numeric" readonly>
                       </label>
                       <label class="np-field">
                         <span>Fire / Zayi</span>
                         <input type="number" id="productionWasteQuantity" min="0" step="1" value="0" inputmode="numeric">
                       </label>
                     </div>
+                    <p class="np-production-yield-preview" id="productionYieldPreview"></p>
                   </section>
                   <label class="np-field np-field-wide">
                     <span>Notes</span>
