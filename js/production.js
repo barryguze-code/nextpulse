@@ -45,6 +45,22 @@ window.NextPulse.production = (() => {
     }).format(Math.trunc(Math.max(numericValue(value), 0)));
   }
 
+  function isDiscreteUnit(unit) {
+    return ["ADET", "AD", "RULO", "KOLI", "KOLİ", "BALYA", "TORBA", "PAKET", "PALET"]
+      .includes(String(unit || "").trim().toUpperCase());
+  }
+
+  function neededBaseQuantity(value, unit) {
+    const quantity = Math.max(numericValue(value), 0);
+    return isDiscreteUnit(unit)
+      ? Math.ceil(quantity - 0.000001)
+      : quantity;
+  }
+
+  function formatNeededBaseQuantity(value, unit) {
+    return formatQuantity(neededBaseQuantity(value, unit));
+  }
+
   function renderPackageQuantityVisual(quantity, unit) {
     const value = Math.max(numericValue(quantity), 0);
     const whole = Math.floor(value + 0.000001);
@@ -74,7 +90,7 @@ window.NextPulse.production = (() => {
   }
 
   function formatPackageAndRemainder(baseQuantity, basePerContainer, containerUnit, baseUnit) {
-    const base = Math.max(numericValue(baseQuantity), 0);
+    const base = neededBaseQuantity(baseQuantity, baseUnit);
     const perContainer = numericValue(basePerContainer);
 
     if (perContainer <= 0 || !containerUnit || containerUnit === baseUnit) {
@@ -687,10 +703,10 @@ window.NextPulse.production = (() => {
         : (isDraft ? `data-production-transfer="${escapeHtml(line.batchMaterialId)}"` : "");
       const movementDisabled = isDraft || isInProgress ? "" : "disabled";
       const movementHint = isPosted
-        ? `${formatQuantity(line.actualConsumedBaseQuantity)} ${escapeHtml(line.baseUnit)} consumed`
+        ? `${formatNeededBaseQuantity(line.actualConsumedBaseQuantity, line.baseUnit)} ${escapeHtml(line.baseUnit)} consumed`
         : (isInProgress
-        ? `${formatQuantity(line.plannedBaseQuantityWithWaste)} ${escapeHtml(line.baseUnit)} planned`
-        : `${formatQuantity(line.plannedBaseQuantityWithWaste)} ${escapeHtml(line.baseUnit)} needed`);
+        ? `${formatNeededBaseQuantity(line.plannedBaseQuantityWithWaste, line.baseUnit)} ${escapeHtml(line.baseUnit)} planned`
+        : `${formatNeededBaseQuantity(line.plannedBaseQuantityWithWaste, line.baseUnit)} ${escapeHtml(line.baseUnit)} needed`);
       return `
         <tr>
           <td>
@@ -702,7 +718,7 @@ window.NextPulse.production = (() => {
           <td class="text-end">
             <span class="np-stock-cell np-production-stock" data-production-required-cell>
               ${renderPackageQuantityVisual(plannedContainerQty, line.containerUnit)}
-              <small>${formatQuantity(requiredBaseQty)} ${escapeHtml(line.baseUnit)}</small>
+              <small>${formatNeededBaseQuantity(requiredBaseQty, line.baseUnit)} ${escapeHtml(line.baseUnit)}</small>
             </span>
           </td>
           <td class="text-end">
@@ -765,7 +781,7 @@ window.NextPulse.production = (() => {
           <div class="np-mobile-record-metric"><span>Required</span><strong>${formatQuantity(requiredContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
           <div class="np-mobile-record-metric"><span>Factory stock</span><strong>${formatQuantity(factoryContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
           <div class="np-mobile-record-metric"><span>Production area</span><strong>${formatQuantity(productionContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Base needed</span><strong>${formatPackageAndRemainder(requiredBaseQty, basePerContainer, line.containerUnit, line.baseUnit)}</strong><small>${formatQuantity(requiredBaseQty)} ${escapeHtml(line.baseUnit)} total</small></div>
+          <div class="np-mobile-record-metric"><span>Base needed</span><strong>${formatPackageAndRemainder(requiredBaseQty, basePerContainer, line.containerUnit, line.baseUnit)}</strong><small>${formatNeededBaseQuantity(requiredBaseQty, line.baseUnit)} ${escapeHtml(line.baseUnit)} total</small></div>
         </div>
         <label class="np-field"><span>${isInProgress ? "Consumed quantity" : "Transfer quantity"}</span><span class="np-inline-number"><input type="number" min="0" step="${isDraft ? "1" : "0.01"}" value="${value}" ${attribute} data-base-per-container="${basePerContainer}" data-planned-base="${requiredBaseQty}" data-factory-on-hand-base="${factoryBaseQty}" data-production-on-hand-base="${productionBaseQty}" ${isDraft || isInProgress ? "" : "disabled"}><span>${escapeHtml(line.containerUnit)}</span></span></label>
       </article>`;
