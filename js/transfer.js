@@ -17,12 +17,13 @@ window.NextPulse.transfer = (() => {
   }
 
   function formatQuantity(value, unit = "") {
-    const digits = isWholeUnit(unit) ? 0 : 2;
+    const number = Number(value || 0);
+    const digits = Math.abs(number - Math.round(number)) < 0.000001 ? 0 : 2;
 
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: digits,
       maximumFractionDigits: digits
-    }).format(Number(value || 0));
+    }).format(number);
   }
 
   function escapeHtml(value) {

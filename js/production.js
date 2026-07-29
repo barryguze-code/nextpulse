@@ -18,9 +18,11 @@ window.NextPulse.production = (() => {
       return "<0.01";
     }
 
+    const isInteger = Math.abs(number - Math.round(number)) < 0.000001;
+
     return new Intl.NumberFormat("en-US", {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
+      minimumFractionDigits: isInteger ? 0 : 2,
+      maximumFractionDigits: isInteger ? 0 : 2
     }).format(number);
   }
 
@@ -69,6 +71,28 @@ window.NextPulse.production = (() => {
         </span>
       </span>
     `;
+  }
+
+  function formatPackageAndRemainder(baseQuantity, basePerContainer, containerUnit, baseUnit) {
+    const base = Math.max(numericValue(baseQuantity), 0);
+    const perContainer = numericValue(basePerContainer);
+
+    if (perContainer <= 0 || !containerUnit || containerUnit === baseUnit) {
+      return `${formatQuantity(base)} ${escapeHtml(baseUnit)}`;
+    }
+
+    const fullContainers = Math.floor(base / perContainer + 0.000001);
+    const remainder = Math.max(base - fullContainers * perContainer, 0);
+
+    if (remainder < 0.000001) {
+      return `${formatQuantity(fullContainers)} ${escapeHtml(containerUnit)}`;
+    }
+
+    if (fullContainers === 0) {
+      return `${formatQuantity(remainder)} ${escapeHtml(baseUnit)} <small>(&lt;1 ${escapeHtml(containerUnit)})</small>`;
+    }
+
+    return `${formatQuantity(fullContainers)} ${escapeHtml(containerUnit)} + ${formatQuantity(remainder)} ${escapeHtml(baseUnit)}`;
   }
 
   function packageInputQuantity(input) {
@@ -741,7 +765,7 @@ window.NextPulse.production = (() => {
           <div class="np-mobile-record-metric"><span>Required</span><strong>${formatQuantity(requiredContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
           <div class="np-mobile-record-metric"><span>Factory stock</span><strong>${formatQuantity(factoryContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
           <div class="np-mobile-record-metric"><span>Production area</span><strong>${formatQuantity(productionContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Base needed</span><strong>${formatQuantity(requiredBaseQty)} ${escapeHtml(line.baseUnit)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Base needed</span><strong>${formatPackageAndRemainder(requiredBaseQty, basePerContainer, line.containerUnit, line.baseUnit)}</strong><small>${formatQuantity(requiredBaseQty)} ${escapeHtml(line.baseUnit)} total</small></div>
         </div>
         <label class="np-field"><span>${isInProgress ? "Consumed quantity" : "Transfer quantity"}</span><span class="np-inline-number"><input type="number" min="0" step="${isDraft ? "1" : "0.01"}" value="${value}" ${attribute} data-base-per-container="${basePerContainer}" data-planned-base="${requiredBaseQty}" data-factory-on-hand-base="${factoryBaseQty}" data-production-on-hand-base="${productionBaseQty}" ${isDraft || isInProgress ? "" : "disabled"}><span>${escapeHtml(line.containerUnit)}</span></span></label>
       </article>`;
@@ -1021,7 +1045,11 @@ window.NextPulse.production = (() => {
       showMessage("");
     });
     document.getElementById("productionOpenBatch")?.addEventListener("change", (event) => {
-      loadBatch(event.target.value);
+      if (event.target.value) {
+        loadBatch(event.target.value);
+      } else {
+        reset();
+      }
     });
     document.getElementById("productionForm")?.addEventListener("submit", createBatch);
     document.getElementById("prepareProductionMaterials")?.addEventListener("click", prepareMaterials);
