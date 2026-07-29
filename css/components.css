@@ -3382,6 +3382,13 @@
 .np-order-delivery { display:grid; gap:4px; margin-bottom:12px; padding:12px 14px; color:var(--np-text); background:var(--np-surface-muted); border:1px solid var(--np-border); border-radius:14px; }
 .np-order-delivery strong { display:flex; gap:7px; align-items:center; }
 .np-order-delivery span { color:var(--np-text-muted); line-height:1.4; }
+.np-orders-panel .np-mobile-record-card.is-expanded { grid-column:1 / -1; }
+.np-orders-panel [data-mobile-order-detail] { min-width:0; max-width:100%; overflow:hidden; }
+.np-orders-panel [data-mobile-order-detail] .np-order-line { grid-template-columns:minmax(7rem,.7fr) minmax(0,2fr) auto; }
+.np-orders-panel [data-mobile-order-detail] .np-order-line > * { min-width:0; overflow-wrap:anywhere; }
+.np-orders-panel [data-mobile-order-detail] .np-form-actions { justify-content:flex-end; }
 @media (max-width: 767px) {
   .np-notification-popover { position:fixed; top:82px; right:12px; left:12px; width:auto; max-height:calc(100dvh - 180px); }
+  .np-orders-panel [data-mobile-order-detail] .np-order-line { grid-template-columns:1fr; gap:.3rem; }
+  .np-orders-panel [data-mobile-order-detail] .np-form-actions .np-primary-button { width:100%; }
 }

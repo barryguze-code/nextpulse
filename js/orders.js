@@ -98,9 +98,19 @@ window.NextPulse.orders = (() => {
 
   async function toggleMobileDetail(orderId) {
     const container = document.querySelector(`[data-mobile-order-detail="${CSS.escape(orderId)}"]`);
+    const card = container?.closest("[data-mobile-order]");
     if (!container) return;
-    if (!container.hidden) { container.hidden = true; return; }
+    if (!container.hidden) {
+      container.hidden = true;
+      card?.classList.remove("is-expanded");
+      return;
+    }
+    document.querySelectorAll("[data-mobile-order-detail]").forEach((detail) => {
+      detail.hidden = true;
+      detail.closest("[data-mobile-order]")?.classList.remove("is-expanded");
+    });
     container.hidden = false;
+    card?.classList.add("is-expanded");
     container.innerHTML = `<div class="np-mobile-record-copy">Loading order lines…</div>`;
     try {
       const detail = await window.NextPulse.api.get(`/orders/${orderId}`);
