@@ -80,6 +80,9 @@ window.NextPulse.inventory = (() => {
   }
 
   function getPackQuantity(item) {
+    if (getInnerUnit(item) && getBaseQtyPerInner(item) > 1 && getUnitsPerPack(item) > 1) {
+      return Math.floor(Number(item.currentBaseQuantity || 0) / getUnitsPerPack(item));
+    }
     const quantity = item.currentPackQuantity || item.currentPackageQuantity || item.currentContainerQuantity || item.calculatedContainerQuantity;
 
     if (quantity !== undefined && quantity !== null) {
@@ -107,6 +110,21 @@ window.NextPulse.inventory = (() => {
   }
 
   function getMeasurements(item) {
+    const baseQuantity = Number(item.currentBaseQuantity || 0);
+    const unitsPerPack = getUnitsPerPack(item);
+    const innerQtyPerPack = getInnerQtyPerPack(item);
+    const baseQtyPerInner = getBaseQtyPerInner(item);
+    if (getInnerUnit(item) && innerQtyPerPack > 1 && baseQtyPerInner > 1 && unitsPerPack > 1) {
+      const containers = Math.floor(baseQuantity / unitsPerPack);
+      const remainder = baseQuantity - (containers * unitsPerPack);
+      const innerUnits = Math.floor(remainder / baseQtyPerInner);
+      const looseUnits = remainder - (innerUnits * baseQtyPerInner);
+      return [
+        { quantity: containers, unit: getPackUnit(item) },
+        innerUnits > 0 ? { quantity: innerUnits, unit: getInnerUnit(item) } : null,
+        looseUnits > 0 ? { quantity: looseUnits, unit: getBaseUnit(item) } : null
+      ].filter(Boolean);
+    }
     const packQuantity = getPackQuantity(item);
     const measurements = [{ quantity: packQuantity, unit: getPackUnit(item) }];
     const innerUnit = getInnerUnit(item);
@@ -348,6 +366,11 @@ window.NextPulse.inventory = (() => {
     const baseQtyPerInner = getBaseQtyPerInner(item)
       || (innerQtyPerPack ? getUnitsPerPack(item) / innerQtyPerPack : 0);
     const parts = [];
+
+    if (innerUnit && innerQtyPerPack > 1 && baseQtyPerInner > 1) {
+      const measurements = getMeasurements(item).map(formatMeasurement);
+      return `${measurements.join(", ")} (1 ${packUnit} = ${formatQuantityForUnit(innerQtyPerPack, innerUnit)} ${innerUnit}; 1 ${innerUnit} = ${formatQuantityForUnit(baseQtyPerInner, baseUnit)} ${baseUnit})`;
+    }
 
     if (packUnit) {
       parts.push(formatMeasurement({ quantity: packQuantity, unit: packUnit }));

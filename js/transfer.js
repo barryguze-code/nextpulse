@@ -800,7 +800,7 @@ window.NextPulse.transfer = (() => {
     document.getElementById("transferPackageQty").value = "1";
     document.getElementById("transferPalletQty").value = "1";
     document.getElementById("transferBoxesPerPallet").value = "250";
-    document.getElementById("transferUnitsPerBox").value = "12";
+    document.getElementById("transferUnitsPerBox").value = "60";
     clearTransferSku({ focus: false });
     applySmartLocationDefaults();
     showMessage("");
