@@ -1291,6 +1291,25 @@
   gap: 10px;
 }
 
+.np-production-completion {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  background: linear-gradient(135deg, rgba(89, 196, 49, 0.1), rgba(99, 91, 255, 0.08));
+  border: 1px solid rgba(89, 196, 49, 0.35);
+  border-radius: 18px;
+}
+
+.np-production-completion h3 {
+  margin: 4px 0 5px;
+  font-size: 1.05rem;
+}
+
+.np-production-completion p {
+  margin: 0;
+  color: var(--np-text-muted);
+}
+
 .np-status-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));
 }

@@ -300,6 +300,23 @@
                     </div>
                     <p class="np-production-content-lock" id="productionContentLock" hidden><i class="bi bi-lock-fill"></i> Created batches are locked to protect inventory calculations.</p>
                   </section>
+                  <section class="np-production-completion np-field-wide" id="productionCompletionFields" hidden aria-labelledby="productionCompletionTitle">
+                    <div>
+                      <p class="np-kicker">Production result</p>
+                      <h3 id="productionCompletionTitle">Record good output and Fire / Zayi</h3>
+                      <p>Enter the usable cookies produced and the cookies lost during production before completing this batch.</p>
+                    </div>
+                    <div class="np-completion-fields">
+                      <label class="np-field">
+                        <span>Good cookies</span>
+                        <input type="number" id="productionGoodQuantity" min="1" step="1" inputmode="numeric">
+                      </label>
+                      <label class="np-field">
+                        <span>Fire / Zayi</span>
+                        <input type="number" id="productionWasteQuantity" min="0" step="1" value="0" inputmode="numeric">
+                      </label>
+                    </div>
+                  </section>
                   <label class="np-field np-field-wide">
                     <span>Notes</span>
                     <input type="text" id="productionNotes" placeholder="Optional production note">
@@ -327,16 +344,6 @@
               <div class="np-summary-stat">
                 <span>Material lines</span>
                 <strong id="productionMaterialCount">0</strong>
-              </div>
-              <div class="np-completion-fields" id="productionCompletionFields" hidden>
-                <label class="np-field">
-                  <span>Good cookies</span>
-                  <input type="number" id="productionGoodQuantity" min="1" step="1">
-                </label>
-                <label class="np-field">
-                  <span>Fire / Zayi</span>
-                  <input type="number" id="productionWasteQuantity" min="0" step="1" value="0">
-                </label>
               </div>
               <div class="np-current-batch-actions" id="productionCurrentBatchActions" hidden>
                 <button class="btn btn-outline-danger" type="button" id="deleteProductionDraft">

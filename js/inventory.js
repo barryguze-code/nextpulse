@@ -28,7 +28,7 @@ window.NextPulse.inventory = (() => {
   }
 
   function isWholeUnit(unit) {
-    return ["ADET", "AD", "PALET"].includes(String(unit || "").trim().toUpperCase());
+    return ["ADET", "AD", "PALET", "RULO", "KOLI", "KOLİ", "BALYA", "TORBA", "PAKET"].includes(String(unit || "").trim().toUpperCase());
   }
 
   function formatQuantityForUnit(value, unit) {
@@ -91,19 +91,8 @@ window.NextPulse.inventory = (() => {
   function getOperationalMeasurement(item) {
     const packQuantity = getPackQuantity(item);
     const packUnit = getPackUnit(item);
-    const baseUnit = getBaseUnit(item);
-    const innerUnit = getInnerUnit(item);
-    const innerQtyPerPack = getInnerQtyPerPack(item);
-    const baseQuantity = Number(item.currentBaseQuantity || 0);
 
-    if (innerUnit && innerQtyPerPack && innerQtyPerPack !== 1) {
-      return {
-        quantity: packQuantity * innerQtyPerPack,
-        unit: innerUnit
-      };
-    }
-
-    if (packUnit && packUnit !== baseUnit && getUnitsPerPack(item) !== 1) {
+    if (packUnit) {
       return {
         quantity: packQuantity,
         unit: packUnit
@@ -111,8 +100,8 @@ window.NextPulse.inventory = (() => {
     }
 
     return {
-      quantity: baseQuantity,
-      unit: baseUnit || packUnit
+      quantity: Number(item.currentBaseQuantity || 0),
+      unit: getBaseUnit(item)
     };
   }
 
@@ -169,6 +158,12 @@ window.NextPulse.inventory = (() => {
       const group = groupedBySku.get(skuCode);
       group.locationRows.push(row);
       group.currentBaseQuantity += Number(row.currentBaseQuantity || 0);
+      group.currentPackageQuantity += Number(
+        row.currentPackageQuantity
+        ?? row.currentContainerQuantity
+        ?? row.calculatedContainerQuantity
+        ?? (Number(row.currentBaseQuantity || 0) / getUnitsPerPack(row))
+      );
     });
 
     return Array.from(groupedBySku.values())
@@ -178,7 +173,6 @@ window.NextPulse.inventory = (() => {
           const rightName = right.locationName || right.locationCode || "";
           return leftName.localeCompare(rightName);
         });
-        group.currentPackageQuantity = Number(group.currentBaseQuantity || 0) / getUnitsPerPack(group);
         return group;
       })
       .sort((left, right) => {

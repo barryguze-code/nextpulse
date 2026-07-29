@@ -142,8 +142,10 @@ window.NextPulse.production = (() => {
 
   function hasInvalidCompletion() {
     const goodQuantity = numericValue(document.getElementById("productionGoodQuantity")?.value);
+    const wasteQuantity = numericValue(document.getElementById("productionWasteQuantity")?.value);
 
     return goodQuantity <= 0
+      || wasteQuantity < 0
       || Array.from(document.querySelectorAll("[data-production-consume]"))
         .filter((input) => input.offsetParent !== null)
         .some((input) => numericValue(input.value) < 0 || isConsumptionTooHigh(input));
@@ -883,11 +885,24 @@ window.NextPulse.production = (() => {
 
     try {
       const response = await window.NextPulse.api.post(`/production/batches/${currentBatch.batch.productionBatchId}/complete`, buildCompletePayload());
-      currentBatch = await window.NextPulse.api.get(`/production/batches/${currentBatch.batch.productionBatchId}`);
       await Promise.allSettled([
         loadOpenBatches(),
         window.NextPulse.inventory?.refresh?.()
       ]);
+      currentBatch = null;
+      const recipeSelect = document.getElementById("productionRecipe");
+      const savedRecipeId = localStorage.getItem(DEFAULT_RECIPE_KEY);
+      if (recipeSelect) {
+        recipeSelect.value = recipes.some((recipe) => recipe.recipeVersionId === savedRecipeId)
+          ? savedRecipeId
+          : (recipes[0]?.recipeVersionId || "");
+      }
+      document.getElementById("productionQuantity").value = "";
+      document.getElementById("productionDate").value = today();
+      document.getElementById("productionNotes").value = "";
+      document.getElementById("productionGoodQuantity").value = "";
+      document.getElementById("productionWasteQuantity").value = "0";
+      updatePreview();
       renderBatch();
       renderOpenBatchOptions();
       showMessage(

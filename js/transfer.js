@@ -189,6 +189,7 @@ window.NextPulse.transfer = (() => {
     if (results) results.hidden = true;
     selected.hidden = false;
     selected.innerHTML = `<span class="np-item-thumb">${escapeHtml(item.skuCode.slice(0, 2))}</span><span><strong>${escapeHtml(item.description)}</strong><small>${escapeHtml(item.skuCode)} · ${escapeHtml(item.packageUnit)} → ${escapeHtml(item.baseUnit)}</small></span><button type="button" data-clear-transfer-sku aria-label="Choose another material"><i class="bi bi-x-lg"></i></button>`;
+    renderLocationOptions();
     applySmartLocationDefaults();
     updateMode();
     updatePreview();
@@ -206,6 +207,7 @@ window.NextPulse.transfer = (() => {
     if (selected) selected.hidden = true;
     if (results) results.hidden = true;
     renderSkuResults();
+    renderLocationOptions();
     updateMode();
     updatePreview();
     if (focus) search?.focus();
@@ -227,7 +229,8 @@ window.NextPulse.transfer = (() => {
   function renderLocationOptions() {
     const from = document.getElementById("transferFromLocation");
     const to = document.getElementById("transferToLocation");
-    const options = [
+    const item = selectedItem();
+    const destinationOptions = [
       `<option value="">Select location</option>`,
       ...locations.map((location) => `
         <option value="${escapeHtml(location.locationCode)}">
@@ -235,8 +238,24 @@ window.NextPulse.transfer = (() => {
         </option>
       `)
     ].join("");
+    const sourceOptions = [
+      `<option value="">Select source location</option>`,
+      ...locations.map((location) => {
+        const row = item?.locationRows?.find((candidate) => candidate.locationCode === location.locationCode);
+        const packageQuantity = Number(row?.currentPackageQuantity || 0);
+        const baseQuantity = Number(row?.currentBaseQuantity || 0);
+        const stock = item
+          ? ` — ${formatQuantity(packageQuantity, getPackUnit(item))} ${getPackUnit(item)} · ${formatQuantity(baseQuantity, getBaseUnit(item))} ${getBaseUnit(item)}`
+          : "";
+        return `
+          <option value="${escapeHtml(location.locationCode)}">
+            ${escapeHtml(location.locationName || location.locationCode)}${escapeHtml(stock)}
+          </option>
+        `;
+      })
+    ].join("");
 
-    [from, to].forEach((select) => {
+    [[from, sourceOptions], [to, destinationOptions]].forEach(([select, options]) => {
       if (!select) {
         return;
       }
