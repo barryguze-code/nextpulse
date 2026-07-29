@@ -182,9 +182,11 @@ window.NextPulse.production = (() => {
 
   function hasInvalidCompletion() {
     const goodQuantity = numericValue(document.getElementById("productionGoodQuantity")?.value);
-    const wasteQuantity = numericValue(document.getElementById("productionWasteQuantity")?.value);
+    const wasteInput = document.getElementById("productionWasteQuantity");
+    const wasteQuantity = numericValue(wasteInput?.value);
 
     return goodQuantity <= 0
+      || !wasteInput?.value.trim()
       || wasteQuantity < 0
       || Array.from(document.querySelectorAll("[data-production-consume]"))
         .filter((input) => input.offsetParent !== null)
@@ -530,7 +532,7 @@ window.NextPulse.production = (() => {
     }
 
     if (goodInput.dataset.batchId !== batch.productionBatchId) {
-      wasteInput.value = 0;
+      wasteInput.value = "";
       goodInput.dataset.batchId = batch.productionBatchId;
       wasteInput.dataset.batchId = batch.productionBatchId;
     }
@@ -543,17 +545,20 @@ window.NextPulse.production = (() => {
     const wasteInput = document.getElementById("productionWasteQuantity");
     const preview = document.getElementById("productionYieldPreview");
     const planned = numericValue(currentBatch?.batch?.plannedOutputQuantity);
+    const hasWasteEntry = Boolean(wasteInput?.value.trim());
     const waste = numericValue(wasteInput?.value);
     const good = Math.max(planned - waste, 0);
     const unit = currentBatch?.batch?.outputUnit || "ADET";
 
     if (goodInput) {
-      goodInput.value = String(good);
+      goodInput.value = hasWasteEntry ? String(good) : "";
     }
 
     if (preview) {
-      preview.textContent = `${formatQuantity(planned)} planned − ${formatQuantity(waste)} Fire/Zayi = ${formatQuantity(good)} good ${unit}.`;
-      preview.classList.toggle("is-error", waste >= planned && planned > 0);
+      preview.textContent = hasWasteEntry
+        ? `${formatQuantity(planned)} planned − ${formatQuantity(waste)} Fire/Zayi = ${formatQuantity(good)} good ${unit}.`
+        : "Enter Fire/Zayi to calculate good output. Enter 0 when there is no waste.";
+      preview.classList.toggle("is-error", hasWasteEntry && waste >= planned && planned > 0);
     }
   }
 
@@ -931,6 +936,13 @@ window.NextPulse.production = (() => {
 
     const button = document.getElementById("completeProductionBatch");
     const originalText = button?.innerHTML;
+    const wasteInput = document.getElementById("productionWasteQuantity");
+
+    if (!wasteInput?.value.trim()) {
+      showMessageAtTop("Enter Fire/Zayi before completing production. Enter 0 when there is no waste.", "error");
+      window.NextPulse.ui.focusFieldError(wasteInput, "Enter 0 or the actual Fire/Zayi quantity.");
+      return;
+    }
 
     if (hasInvalidCompletion()) {
       showMessageAtTop("Check good cookies and consumed material quantities before completing production.", "error");
@@ -961,7 +973,7 @@ window.NextPulse.production = (() => {
       document.getElementById("productionDate").value = today();
       document.getElementById("productionNotes").value = "";
       document.getElementById("productionGoodQuantity").value = "";
-      document.getElementById("productionWasteQuantity").value = "0";
+      document.getElementById("productionWasteQuantity").value = "";
       updatePreview();
       renderBatch();
       renderOpenBatchOptions();

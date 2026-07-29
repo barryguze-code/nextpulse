@@ -29,12 +29,12 @@ window.NextPulse.inventory = (() => {
   }
 
   function isWholeUnit(unit) {
-    return ["ADET", "AD", "PALET", "RULO", "KOLI", "KOLİ", "BALYA", "TORBA", "PAKET"].includes(String(unit || "").trim().toUpperCase());
+    return ["ADET", "AD", "PALET"].includes(String(unit || "").trim().toUpperCase());
   }
 
   function formatQuantityForUnit(value, unit) {
     const number = Number(value || 0);
-    const digits = Math.abs(number - Math.round(number)) < 0.000001 ? 0 : 2;
+    const digits = isWholeUnit(unit) || Math.abs(number - Math.round(number)) < 0.000001 ? 0 : 2;
 
     return new Intl.NumberFormat("en-US", {
       minimumFractionDigits: digits,
