@@ -144,6 +144,13 @@ window.NextPulse.inventory = (() => {
     ).join(`<i class="bi bi-dot"></i>`)}</div>`;
   }
 
+  function formatLocationInventory(row) {
+    const measurements = getMeasurements(row)
+      .map(formatMeasurement)
+      .join(" · ");
+    return measurements || `0 ${getBaseUnit(row)}`;
+  }
+
   function getItemKey(item) {
     return item.skuCode || item.itemCode || "";
   }
@@ -854,7 +861,7 @@ window.NextPulse.inventory = (() => {
     const sheet = document.getElementById("inventoryAdjustmentSheet");
     document.getElementById("inventoryAdjustmentTitle").textContent = item.description || item.skuCode;
     document.getElementById("inventoryAdjustmentLocation").innerHTML = getLocationRows(item).map((row) =>
-      `<option value="${escapeHtml(row.locationCode)}">${escapeHtml(row.locationName || row.locationCode)}</option>`
+      `<option value="${escapeHtml(row.locationCode)}">${escapeHtml(row.locationName || row.locationCode)} — ${escapeHtml(formatLocationInventory(row))}</option>`
     ).join("");
     document.getElementById("inventoryAdjustmentMode").innerHTML = `
       <option value="CONTAINER">${escapeHtml(getPackUnit(item))}</option>
