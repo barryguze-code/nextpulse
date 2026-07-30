@@ -859,6 +859,20 @@ window.NextPulse.inventory = (() => {
     selectedItem = item;
     if (!item) return;
     const sheet = document.getElementById("inventoryAdjustmentSheet");
+    const isFinishedGood = String(item.categoryCode || "").toUpperCase() === "FINISHED_GOOD";
+    const useReason = document.getElementById("inventoryProductionUseReason");
+    const reasons = document.getElementById("inventoryAdjustmentReasons");
+    const useRadio = document.querySelector('input[name="inventoryReason"][value="USE"]');
+    const damagedRadio = document.querySelector('input[name="inventoryReason"][value="DAMAGED"]');
+    if (useReason) useReason.hidden = isFinishedGood;
+    reasons?.classList.toggle("is-finished-good", isFinishedGood);
+    if (isFinishedGood) {
+      if (damagedRadio) damagedRadio.checked = true;
+    } else if (useRadio) {
+      useRadio.checked = true;
+    }
+    document.getElementById("inventoryAdjustmentKicker").textContent =
+      isFinishedGood ? "Finished good action" : "Inventory action";
     document.getElementById("inventoryAdjustmentTitle").textContent = item.description || item.skuCode;
     document.getElementById("inventoryAdjustmentLocation").innerHTML = getLocationRows(item).map((row) =>
       `<option value="${escapeHtml(row.locationCode)}">${escapeHtml(row.locationName || row.locationCode)} — ${escapeHtml(formatLocationInventory(row))}</option>`
@@ -870,8 +884,10 @@ window.NextPulse.inventory = (() => {
     document.getElementById("inventoryAdjustmentNote").value = "";
     sheet.hidden = false;
     sheet.setAttribute("aria-hidden", "false");
-    if (!batchesLoaded) loadProductionBatches();
-    else renderProductionBatches();
+    if (!isFinishedGood) {
+      if (!batchesLoaded) loadProductionBatches();
+      else renderProductionBatches();
+    }
     updateAdjustmentPreview();
     window.setTimeout(() => document.getElementById("inventoryAdjustmentQuantity")?.focus(), 0);
   }
