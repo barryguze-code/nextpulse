@@ -2167,6 +2167,8 @@
   border-radius: var(--np-radius);
 }
 
+#transferPreview { white-space: pre-line; }
+
 .np-drawer-actions {
   display: flex;
   align-items: center;

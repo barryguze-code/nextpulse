@@ -511,7 +511,18 @@ window.NextPulse.transfer = (() => {
         return "Palet, koli ve birim miktarlarını girin.";
       }
 
-      return `${formatQuantity(palletQuantity(), "PALET")} PALET × ${formatQuantity(boxesPerPallet(), "KOLI")} KOLİ × ${formatQuantity(unitsPerBox(), getBaseUnit(item))} ${getBaseUnit(item)} = ${formatQuantity(baseQty, getBaseUnit(item))} ${getBaseUnit(item)}; ${locationLabel(from)} → ${locationLabel(to)} transfer edilecek.`;
+      const config = packConfigFor(item);
+      const unitsPerPackage = Number(config?.unitsPerPackage || 1) || 1;
+      const packagesPerCarton = unitsPerBox() / unitsPerPackage;
+      const totalCartons = palletQuantity() * boxesPerPallet();
+      const totalPackages = totalCartons * packagesPerCarton;
+      const isTurkish = document.documentElement.lang === "tr";
+
+      if (!isTurkish) {
+        return `${formatQuantity(palletQuantity(), "PALET")} PALLETS × ${formatQuantity(boxesPerPallet(), "KOLI")} BOXES × ${formatQuantity(packagesPerCarton, "PAKET")} PACKS = ${formatQuantity(palletQuantity(), "PALET")} PALLETS · ${formatQuantity(totalCartons, "KOLI")} BOXES · ${formatQuantity(totalPackages, "PAKET")} PACKS · ${formatQuantity(baseQty, getBaseUnit(item))} UNITS\nWill be transferred from ${locationLabel(from)} → ${locationLabel(to)}.`;
+      }
+
+      return `${formatQuantity(palletQuantity(), "PALET")} PALET × ${formatQuantity(boxesPerPallet(), "KOLI")} KOLİ × ${formatQuantity(packagesPerCarton, "PAKET")} PAKET = ${formatQuantity(palletQuantity(), "PALET")} PALET · ${formatQuantity(totalCartons, "KOLI")} KOLİ · ${formatQuantity(totalPackages, "PAKET")} PAKET · ${formatQuantity(baseQty, getBaseUnit(item))} ADET\n${locationLabel(from)} → ${locationLabel(to)} lokasyonuna transfer edilecek.`;
     }
 
     const baseQty = materialBaseQuantity(item);
