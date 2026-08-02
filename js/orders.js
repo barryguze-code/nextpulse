@@ -8,14 +8,14 @@ window.NextPulse.orders = (() => {
 
   const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#039;");
   const formatDate = (value) => value ? new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`)) : "—";
-  const statusLabel = (status) => ({ IMPORTED: "Aktarıldı", RESERVED: "Rezerve", CLOSED: "Kapandı", CONFIRMED: "Onaylandı", IN_PROGRESS: "İşlemde", FULFILLED: "Sevk Edildi", CANCELLED: "İptal" })[status] || status || "Bilinmiyor";
+  const statusLabel = (status) => ({ IMPORTED: "Aktarıldı", RESERVED: "Sevk Edildi", CLOSED: "Teslim Edildi", CONFIRMED: "Onaylandı", IN_PROGRESS: "İşlemde", FULFILLED: "Sevk Edildi", CANCELLED: "İptal" })[status] || status || "Bilinmiyor";
 
   function actionMarkup(detail) {
     if (detail.orderStatus === "IMPORTED") {
-      return `<button class="np-primary-button" type="button" data-order-action="reserve" data-order-id="${detail.salesOrderId}"><i class="bi bi-box-arrow-in-down"></i> Hedef Stoktan Rezerve Et</button>`;
+      return `<button class="np-primary-button" type="button" data-order-action="reserve" data-order-id="${detail.salesOrderId}"><i class="bi bi-truck"></i> Hedef'ten Sevk Et</button>`;
     }
-    if (detail.orderStatus === "RESERVED") {
-      return `<button class="np-primary-button" type="button" data-order-action="close" data-order-id="${detail.salesOrderId}"><i class="bi bi-check2-circle"></i> Siparişi Sevk Et ve Kapat</button>`;
+    if (["RESERVED", "FULFILLED"].includes(detail.orderStatus)) {
+      return `<button class="np-primary-button" type="button" data-order-action="close" data-order-id="${detail.salesOrderId}"><i class="bi bi-check2-circle"></i> Teslim Edildi</button>`;
     }
     return "";
   }
@@ -33,12 +33,19 @@ window.NextPulse.orders = (() => {
     const status = document.getElementById("ordersStatusFilter")?.value || "";
     return orders.filter((order) => {
       const haystack = [order.orderNumber, order.externalOrderNumber, order.customerName, order.customerBranch, order.shippingAddress, order.sourceFilename].join(" ").toLowerCase();
-      return (!search || haystack.includes(search)) && (!status || order.orderStatus === status);
+      const matchesStatus = !status || order.orderStatus === status
+        || (status === "FULFILLED" && order.orderStatus === "RESERVED");
+      return (!search || haystack.includes(search)) && matchesStatus;
+    }).sort((left, right) => {
+      const leftClosed = left.orderStatus === "CLOSED" ? 1 : 0;
+      const rightClosed = right.orderStatus === "CLOSED" ? 1 : 0;
+      if (leftClosed !== rightClosed) return leftClosed - rightClosed;
+      return String(left.requestedDeliveryDate || "9999-12-31").localeCompare(String(right.requestedDeliveryDate || "9999-12-31"));
     });
   }
 
   function updateStats() {
-    const open = orders.filter((order) => !["CLOSED", "FULFILLED", "CANCELLED"].includes(order.orderStatus));
+    const open = orders.filter((order) => !["CLOSED", "CANCELLED"].includes(order.orderStatus));
     const delivery = open.map((order) => order.requestedDeliveryDate).filter(Boolean).sort()[0];
     document.getElementById("ordersTotal").textContent = orders.length;
     document.getElementById("ordersOpen").textContent = open.length;
@@ -56,7 +63,14 @@ window.NextPulse.orders = (() => {
       if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">Eşleşen sipariş yok.</div>`;
       return;
     }
-    body.innerHTML = rows.map((order) => `
+    body.innerHTML = rows.map((order) => order.orderStatus === "CLOSED" ? `
+      <tr class="np-order-closed-row">
+        <td><span class="np-order-number"><strong>${escapeHtml(order.orderNumber)}</strong><small>${escapeHtml(order.externalOrderNumber)}</small></span></td>
+        <td colspan="2"><strong>${escapeHtml(order.customerBranch || order.customerName)}</strong></td>
+        <td>${formatDate(order.requestedDeliveryDate)}</td>
+        <td><span class="np-order-status" data-status="CLOSED">${escapeHtml(statusLabel(order.orderStatus))}</span></td>
+        <td colspan="3"><span class="np-order-closed-summary"><i class="bi bi-check2-circle"></i> Sevk edildi · Teslim edildi · Kapandı</span></td>
+      </tr>` : `
       <tr data-order-row="${order.salesOrderId}">
         <td><span class="np-order-number"><strong>${escapeHtml(order.orderNumber)}</strong><small>${escapeHtml(order.externalOrderNumber)}</small></span></td>
         <td>${escapeHtml(order.customerName)}<br><small>${escapeHtml(order.customerBranch || "")}</small></td><td>${formatDate(order.orderDate)}</td><td><strong>${formatDate(order.requestedDeliveryDate)}</strong></td>
@@ -66,7 +80,11 @@ window.NextPulse.orders = (() => {
         <td class="text-end"><button class="np-row-action" type="button" aria-label="Siparişi görüntüle"><i class="bi bi-chevron-down"></i></button></td>
       </tr><tr class="np-order-detail-row" data-order-detail="${order.salesOrderId}" hidden><td colspan="8">Sipariş kalemleri yükleniyor…</td></tr>`).join("");
 
-    if (mobileList) mobileList.innerHTML = rows.map((order) => `
+    if (mobileList) mobileList.innerHTML = rows.map((order) => order.orderStatus === "CLOSED" ? `
+      <article class="np-mobile-record-card np-order-closed-card">
+        <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(order.orderNumber)}</strong><span>${escapeHtml(order.customerBranch || order.customerName)} · ${formatDate(order.requestedDeliveryDate)}</span></div><span class="np-order-status" data-status="CLOSED">${escapeHtml(statusLabel(order.orderStatus))}</span></div>
+        <p class="np-order-closed-summary"><i class="bi bi-check2-circle"></i> Sevk edildi · Teslim edildi · Kapandı</p>
+      </article>` : `
       <article class="np-mobile-record-card" data-mobile-order="${order.salesOrderId}">
         <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(order.orderNumber)}</strong><span>${escapeHtml(order.customerBranch || order.customerName)} · ${escapeHtml(order.externalOrderNumber)}</span></div><span class="np-order-status" data-status="${escapeHtml(order.orderStatus)}">${escapeHtml(statusLabel(order.orderStatus))}</span></div>
         <div class="np-mobile-record-grid">
@@ -130,19 +148,23 @@ window.NextPulse.orders = (() => {
   }
 
   async function runOrderAction(action, orderId) {
-    const label = action === "reserve" ? "reserve this order from Hedef" : "close and ship this order";
+    const shipping = action === "reserve";
     const confirmed = await window.NextPulse.ui.confirmAction({
-      type: action === "reserve" ? "warning" : "success",
-      kicker: action === "reserve" ? "Inventory reservation" : "Shipment confirmation",
-      title: action === "reserve" ? "Reserve order stock?" : "Close this order?",
-      message: `This will ${label} and post the inventory ledger movement.`,
-      confirmLabel: action === "reserve" ? "Reserve stock" : "Close & ship",
-      cancelLabel: "Cancel"
+      type: shipping ? "warning" : "success",
+      kicker: shipping ? "SEVK ONAYI" : "TESLİMAT ONAYI",
+      title: shipping ? "Sipariş Hedef'ten sevk edilsin mi?" : "Sipariş teslim edildi mi?",
+      message: shipping
+        ? "Sipariş miktarı Hedef stoktan düşülecek ve sipariş Sevk Edildi durumuna alınacak."
+        : "Paletlerin ilgili BİM şubesine ulaştığını onaylar. Sipariş Teslim Edildi durumuyla kapanır.",
+      confirmLabel: shipping ? "Sevk Et" : "Teslim Edildi",
+      cancelLabel: "Vazgeç"
     });
     if (!confirmed) return;
     try {
       const result = await window.NextPulse.api.postEmpty(`/orders/${orderId}/${action}`);
-      showMessage(`${result.boxQuantity} KOLİ · ${result.cookieQuantity} ADET posted as ${result.transactionNumber}.`, "success");
+      showMessage(shipping
+        ? `${result.boxQuantity} KOLİ · ${result.cookieQuantity} ADET Hedef stoktan sevk edildi. İşlem: ${result.transactionNumber}`
+        : "Teslimat onaylandı ve sipariş kapatıldı.", "success");
       await Promise.all([loadOrders(true), window.NextPulse.inventory?.refresh?.()]);
     } catch (error) {
       showMessage(error.message || "Order inventory action failed.", "error");

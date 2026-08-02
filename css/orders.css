@@ -6,8 +6,15 @@
 .np-order-number { display: grid; gap: .15rem; }
 .np-order-number small, .np-order-source small { color: var(--np-text-soft); }
 .np-order-status { display: inline-flex; align-items: center; border-radius: 999px; padding: .25rem .55rem; background: rgba(99, 91, 255, .1); color: var(--np-primary); font-size: .76rem; font-weight: 700; letter-spacing: .03em; }
-.np-order-status[data-status="FULFILLED"] { background: rgba(22, 163, 74, .11); color: #15803d; }
+.np-order-status[data-status="IMPORTED"] { background: rgba(220, 38, 38, .1); color: #b91c1c; }
+.np-order-status[data-status="RESERVED"],
+.np-order-status[data-status="FULFILLED"] { background: rgba(22, 163, 74, .13); color: #15803d; }
+.np-order-status[data-status="CLOSED"] { background: rgba(22, 163, 74, .09); color: #166534; }
 .np-order-status[data-status="CANCELLED"] { background: rgba(220, 38, 38, .09); color: #b91c1c; }
+.np-order-closed-row td { padding-top: .6rem !important; padding-bottom: .6rem !important; background: rgba(22, 163, 74, .035); color: var(--np-text-soft); }
+.np-order-closed-summary { display:inline-flex; align-items:center; gap:.4rem; margin:0; color:#15803d; font-size:.82rem; font-weight:700; }
+.np-order-closed-card { gap:.55rem; padding:.85rem 1rem; background:rgba(22,163,74,.04); border-color:rgba(22,163,74,.18); }
+.np-order-closed-card .np-order-closed-summary { margin:0; }
 .np-order-detail-row td { background: #f8f9fc; padding: 1rem 1.25rem !important; }
 .np-order-lines { display: grid; gap: .55rem; }
 .np-order-line { display: grid; grid-template-columns: minmax(10rem, 1fr) minmax(16rem, 2fr) auto; gap: 1rem; align-items: center; padding: .7rem .8rem; border: 1px solid var(--np-border); border-radius: var(--np-radius-sm); background: #fff; }
