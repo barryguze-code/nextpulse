@@ -244,7 +244,7 @@ window.NextPulse.inventory = (() => {
       return "";
     }
 
-    return new Intl.DateTimeFormat("en-US", {
+    return new Intl.DateTimeFormat(document.documentElement.lang === "tr" ? "tr-TR" : "en-US", {
       month: "short",
       day: "numeric",
       hour: "numeric",
@@ -255,7 +255,7 @@ window.NextPulse.inventory = (() => {
   function movementDirection(movement) {
     if (movement.fromLocationCode && movement.toLocationCode) {
       return {
-        label: "Transfer",
+        label: document.documentElement.lang === "tr" ? "Transfer" : "Transfer",
         className: "is-transfer",
         icon: "bi-arrow-left-right",
         location: `${movement.fromLocationName || movement.fromLocationCode} → ${movement.toLocationName || movement.toLocationCode}`
@@ -264,7 +264,7 @@ window.NextPulse.inventory = (() => {
 
     if (movement.toLocationCode) {
       return {
-        label: "Receive",
+        label: document.documentElement.lang === "tr" ? "Giriş" : "Receive",
         className: "is-in",
         icon: "bi-arrow-down-left",
         location: movement.toLocationName || movement.toLocationCode
@@ -273,7 +273,7 @@ window.NextPulse.inventory = (() => {
 
     if (movement.fromLocationCode) {
       return {
-        label: "Use",
+        label: document.documentElement.lang === "tr" ? "Çıkış" : "Use",
         className: "is-out",
         icon: "bi-arrow-up-right",
         location: movement.fromLocationName || movement.fromLocationCode
@@ -281,7 +281,7 @@ window.NextPulse.inventory = (() => {
     }
 
     return {
-      label: "Movement",
+      label: document.documentElement.lang === "tr" ? "Hareket" : "Movement",
       className: "",
       icon: "bi-dot",
       location: ""
@@ -289,6 +289,19 @@ window.NextPulse.inventory = (() => {
   }
 
   function formatMovementType(value) {
+    const labels = {
+      PRODUCTION_OUTPUT: ["Üretim Girişi", "Production Output"],
+      COUNT_IN: ["Sayım Girişi", "Count In"],
+      COUNT_OUT: ["Sayım Çıkışı", "Count Out"],
+      RECEIPT: ["Mal Kabul", "Receipt"],
+      TRANSFER: ["Transfer", "Transfer"],
+      PRODUCTION_CONSUMPTION: ["Üretim Sarfı", "Production Use"],
+      WASTE: ["Fire / Zayi", "Waste"],
+      ADJUSTMENT_IN: ["Stok Artışı", "Adjustment In"],
+      ADJUSTMENT_OUT: ["Stok Azalışı", "Adjustment Out"]
+    };
+    const configured = labels[String(value || "").toUpperCase()];
+    if (configured) return configured[document.documentElement.lang === "tr" ? 0 : 1];
     return String(value || "Movement")
       .replaceAll("_", " ")
       .toLowerCase()
@@ -328,7 +341,7 @@ window.NextPulse.inventory = (() => {
       return "";
     }
 
-    return `After: ${balances.join(" · ")}`;
+    return `${document.documentElement.lang === "tr" ? "Bakiye" : "After"}: ${balances.join(" · ")}`;
   }
 
   function buildConversionText(item, quantity = 1) {
@@ -660,7 +673,6 @@ window.NextPulse.inventory = (() => {
       <div class="np-location-stock-row">
         <div class="np-location-stock-name">
           <strong>${escapeHtml(row.locationName || row.locationCode || "Location")}</strong>
-          <span>${escapeHtml(row.locationCode || "")}</span>
         </div>
         <div class="np-location-stock-values">
           <span><strong>${formatQuantityForUnit(getOperationalMeasurement(row).quantity, getOperationalMeasurement(row).unit)}</strong> ${escapeHtml(getOperationalMeasurement(row).unit)}</span>
@@ -769,9 +781,17 @@ window.NextPulse.inventory = (() => {
       }
     }
 
-    document.getElementById("inventoryDrawerCategory").textContent = item.categoryCode || "Inventory";
+    const categoryLabels = {
+      FINISHED_GOOD: ["Mamul", "Finished Good"],
+      RAW_MATERIAL: ["Hammadde", "Raw Material"],
+      PACKAGING: ["Ambalaj", "Packaging"]
+    };
+    const category = categoryLabels[String(item.categoryCode || "").toUpperCase()];
+    document.getElementById("inventoryDrawerCategory").textContent = category
+      ? category[document.documentElement.lang === "tr" ? 0 : 1]
+      : (item.categoryCode || (document.documentElement.lang === "tr" ? "Stok" : "Inventory"));
     document.getElementById("inventoryDrawerTitle").textContent = item.description || item.skuCode || "Inventory item";
-    document.getElementById("inventoryDrawerSku").textContent = `${item.skuCode || ""} · Total on hand`;
+    document.getElementById("inventoryDrawerSku").textContent = `${item.skuCode || ""} · ${document.documentElement.lang === "tr" ? "Toplam stok" : "Total on hand"}`;
     const operationalMeasurement = getOperationalMeasurement(item);
     document.getElementById("inventoryDrawerPackageStock").textContent = `${formatQuantityForUnit(operationalMeasurement.quantity, operationalMeasurement.unit)} ${operationalMeasurement.unit}`;
     document.getElementById("inventoryDrawerBaseStock").textContent = `${formatQuantityForUnit(item.currentBaseQuantity, getBaseUnit(item))} ${getBaseUnit(item)}`;

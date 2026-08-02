@@ -102,12 +102,13 @@ window.NextPulse.ui = (() => {
         badge.textContent = inventoryAlerts.length > 99 ? "99+" : String(inventoryAlerts.length);
       }
       if (list) {
+        const isTurkish = document.documentElement.lang === "tr";
         list.innerHTML = inventoryAlerts.length
-          ? inventoryAlerts.map((alert) => `<button class="np-notification-item ${alert.severity === "OUT_OF_STOCK" ? "is-out" : "is-low"}" type="button" data-page="inventory"><i class="bi ${alert.severity === "OUT_OF_STOCK" ? "bi-x-octagon" : "bi-exclamation-triangle"}"></i><span><strong>${escapeHtml(alert.description)}</strong><small>${alert.severity === "OUT_OF_STOCK" ? "Out of stock" : "Low inventory"} · ${Number(alert.currentQuantity).toLocaleString("tr-TR")} / ${Number(alert.criticalQuantity).toLocaleString("tr-TR")} ${escapeHtml(alert.unit)}</small></span></button>`).join("")
-          : `<p class="np-notification-empty"><i class="bi bi-check-circle"></i> Inventory levels are healthy.</p>`;
+          ? inventoryAlerts.map((alert) => `<button class="np-notification-item ${alert.severity === "OUT_OF_STOCK" ? "is-out" : "is-low"}" type="button" data-page="inventory"><i class="bi ${alert.severity === "OUT_OF_STOCK" ? "bi-x-octagon" : "bi-exclamation-triangle"}"></i><span><strong>${escapeHtml(alert.description)}</strong><small>${alert.severity === "OUT_OF_STOCK" ? (isTurkish ? "Stok tükendi" : "Out of stock") : (isTurkish ? "Kritik stok" : "Low inventory")} · ${Number(alert.currentQuantity).toLocaleString(isTurkish ? "tr-TR" : "en-US")} / ${Number(alert.criticalQuantity).toLocaleString(isTurkish ? "tr-TR" : "en-US")} ${escapeHtml(alert.unit)}</small></span></button>`).join("")
+          : `<p class="np-notification-empty"><i class="bi bi-check-circle"></i> ${isTurkish ? "Stok seviyeleri yeterli." : "Inventory levels are healthy."}</p>`;
       }
     } catch (error) {
-      if (list) list.textContent = error.message || "Alerts could not be loaded.";
+      if (list) list.textContent = error.message || (document.documentElement.lang === "tr" ? "Stok uyarıları yüklenemedi." : "Alerts could not be loaded.");
     }
   }
 
