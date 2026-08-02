@@ -345,7 +345,7 @@ window.NextPulse.transfer = (() => {
     if (boxesInput && cartonsPerPallet > 0) boxesInput.value = String(cartonsPerPallet);
     if (cookiesInput && cookiesPerCarton > 0) cookiesInput.value = String(cookiesPerCarton);
     if (help) {
-      help.textContent = `Configured standard: 1 KOLİ = ${formatQuantity(packagesPerCarton, "PAKET")} PAKET × ${formatQuantity(unitsPerPackage, "ADET")} cookies = ${formatQuantity(cookiesPerCarton, "ADET")} cookies; 1 PALET = ${formatQuantity(cartonsPerPallet, "KOLI")} KOLİ. Change the box count for partial pallets.`;
+      help.textContent = `Standart: 1 KOLİ = ${formatQuantity(packagesPerCarton, "PAKET")} PAKET × ${formatQuantity(unitsPerPackage, "ADET")} KURABİYE = ${formatQuantity(cookiesPerCarton, "ADET")} KURABİYE; 1 PALET = ${formatQuantity(cartonsPerPallet, "KOLI")} KOLİ. Eksik paletlerde koli adedini değiştirin.`;
     }
   }
 
@@ -405,12 +405,15 @@ window.NextPulse.transfer = (() => {
         : (Array.from(allowedSources)[0] || "");
     }
 
-    const allowedDestinations = new Set(["BIM_INTERMEDIATE", "TARGET_3PL"]);
+    const factory = findLocationCode("FACTORY", "FABRIKA");
+    const allowedDestinations = new Set([factory, "BIM_INTERMEDIATE", "TARGET_3PL"].filter(Boolean));
     Array.from(to.options).forEach((option) => {
       if (option.value) option.disabled = !allowedDestinations.has(option.value);
     });
     if (!allowedDestinations.has(to.value) || to.value === from.value) {
-      to.value = from.value === "BIM_INTERMEDIATE" ? "TARGET_3PL" : "BIM_INTERMEDIATE";
+      to.value = from.value === production
+        ? (factory || "BIM_INTERMEDIATE")
+        : (from.value === "BIM_INTERMEDIATE" ? "TARGET_3PL" : "BIM_INTERMEDIATE");
     }
   }
 
@@ -436,7 +439,9 @@ window.NextPulse.transfer = (() => {
       const productionStock = sourceBaseStock(item, production);
       const positiveLocation = item.locationRows.find((row) => Number(row.currentBaseQuantity || 0) > 0)?.locationCode;
       from.value = productionStock > 0 ? production : (positiveLocation || "");
-      to.value = from.value === bim ? target : bim;
+      to.value = from.value === production
+        ? (factory || bim)
+        : (from.value === bim ? target : bim);
       constrainFinishedGoodRoute();
       return;
     }
@@ -455,10 +460,14 @@ window.NextPulse.transfer = (() => {
       return;
     }
 
+    const factory = findLocationCode("FACTORY", "FABRIKA");
+    const production = findLocationCode("PRODUCTION_AREA", "ÜRETIM", "URETIM");
     const bim = findLocationCode("BIM", "ARA");
     const target = findLocationCode("HEDEF");
 
-    if (bim && target && from.value === bim) {
+    if (from.value === production && factory) {
+      to.value = factory;
+    } else if (bim && target && from.value === bim) {
       to.value = target;
     } else {
       to.value = bim;
