@@ -8,14 +8,14 @@ window.NextPulse.orders = (() => {
 
   const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#039;");
   const formatDate = (value) => value ? new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`)) : "—";
-  const statusLabel = (status) => ({ IMPORTED: "Imported", RESERVED: "Reserved", CLOSED: "Closed", CONFIRMED: "Confirmed", IN_PROGRESS: "In progress", FULFILLED: "Fulfilled", CANCELLED: "Cancelled" })[status] || status || "Unknown";
+  const statusLabel = (status) => ({ IMPORTED: "Aktarıldı", RESERVED: "Rezerve", CLOSED: "Kapandı", CONFIRMED: "Onaylandı", IN_PROGRESS: "İşlemde", FULFILLED: "Sevk Edildi", CANCELLED: "İptal" })[status] || status || "Bilinmiyor";
 
   function actionMarkup(detail) {
     if (detail.orderStatus === "IMPORTED") {
-      return `<button class="np-primary-button" type="button" data-order-action="reserve" data-order-id="${detail.salesOrderId}"><i class="bi bi-box-arrow-in-down"></i> Fulfill / Reserve from Hedef</button>`;
+      return `<button class="np-primary-button" type="button" data-order-action="reserve" data-order-id="${detail.salesOrderId}"><i class="bi bi-box-arrow-in-down"></i> Hedef Stoktan Rezerve Et</button>`;
     }
     if (detail.orderStatus === "RESERVED") {
-      return `<button class="np-primary-button" type="button" data-order-action="close" data-order-id="${detail.salesOrderId}"><i class="bi bi-check2-circle"></i> Close & Ship Order</button>`;
+      return `<button class="np-primary-button" type="button" data-order-action="close" data-order-id="${detail.salesOrderId}"><i class="bi bi-check2-circle"></i> Siparişi Sevk Et ve Kapat</button>`;
     }
     return "";
   }
@@ -49,11 +49,11 @@ window.NextPulse.orders = (() => {
     const rows = filteredOrders();
     const body = document.getElementById("ordersTableBody");
     const mobileList = document.getElementById("ordersMobileList");
-    document.getElementById("ordersCount").textContent = `${rows.length} order${rows.length === 1 ? "" : "s"}`;
+    document.getElementById("ordersCount").textContent = `${rows.length} sipariş`;
     updateStats();
     if (!rows.length) {
-      body.innerHTML = `<tr><td colspan="8" class="np-empty-cell">No matching orders.</td></tr>`;
-      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">No matching orders.</div>`;
+      body.innerHTML = `<tr><td colspan="8" class="np-empty-cell">Eşleşen sipariş yok.</td></tr>`;
+      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">Eşleşen sipariş yok.</div>`;
       return;
     }
     body.innerHTML = rows.map((order) => `
@@ -62,21 +62,21 @@ window.NextPulse.orders = (() => {
         <td>${escapeHtml(order.customerName)}<br><small>${escapeHtml(order.customerBranch || "")}</small></td><td>${formatDate(order.orderDate)}</td><td><strong>${formatDate(order.requestedDeliveryDate)}</strong></td>
         <td><span class="np-order-status" data-status="${escapeHtml(order.orderStatus)}">${escapeHtml(statusLabel(order.orderStatus))}</span></td>
         <td class="text-end">${Number(order.lineCount || 0)}</td>
-        <td><span class="np-order-source"><i class="bi bi-file-earmark-pdf"></i> Email PDF<br><small>${escapeHtml(order.sourceFilename)}</small></span></td>
-        <td class="text-end"><button class="np-row-action" type="button" aria-label="View order"><i class="bi bi-chevron-down"></i></button></td>
-      </tr><tr class="np-order-detail-row" data-order-detail="${order.salesOrderId}" hidden><td colspan="8">Loading order lines…</td></tr>`).join("");
+        <td><span class="np-order-source"><i class="bi bi-file-earmark-pdf"></i> E-posta PDF<br><small>${escapeHtml(order.sourceFilename)}</small></span></td>
+        <td class="text-end"><button class="np-row-action" type="button" aria-label="Siparişi görüntüle"><i class="bi bi-chevron-down"></i></button></td>
+      </tr><tr class="np-order-detail-row" data-order-detail="${order.salesOrderId}" hidden><td colspan="8">Sipariş kalemleri yükleniyor…</td></tr>`).join("");
 
     if (mobileList) mobileList.innerHTML = rows.map((order) => `
       <article class="np-mobile-record-card" data-mobile-order="${order.salesOrderId}">
         <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(order.orderNumber)}</strong><span>${escapeHtml(order.customerBranch || order.customerName)} · ${escapeHtml(order.externalOrderNumber)}</span></div><span class="np-order-status" data-status="${escapeHtml(order.orderStatus)}">${escapeHtml(statusLabel(order.orderStatus))}</span></div>
         <div class="np-mobile-record-grid">
-          <div class="np-mobile-record-metric"><span>Delivery</span><strong>${formatDate(order.requestedDeliveryDate)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Order date</span><strong>${formatDate(order.orderDate)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Lines</span><strong>${Number(order.lineCount || 0)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Source</span><strong>Email PDF</strong></div>
+          <div class="np-mobile-record-metric"><span>Teslimat</span><strong>${formatDate(order.requestedDeliveryDate)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Sipariş tarihi</span><strong>${formatDate(order.orderDate)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Kalem</span><strong>${Number(order.lineCount || 0)}</strong></div>
+          <div class="np-mobile-record-metric"><span>Kaynak</span><strong>E-posta PDF</strong></div>
         </div>
         <p class="np-mobile-record-copy"><i class="bi bi-file-earmark-pdf"></i> ${escapeHtml(order.sourceFilename)}</p>
-        <button class="btn btn-sm btn-outline-light-subtle" type="button" data-mobile-order-open="${order.salesOrderId}"><i class="bi bi-chevron-down"></i> View order lines</button>
+        <button class="btn btn-sm btn-outline-light-subtle" type="button" data-mobile-order-open="${order.salesOrderId}"><i class="bi bi-chevron-down"></i> Sipariş Kalemleri</button>
         <div data-mobile-order-detail="${order.salesOrderId}" hidden></div>
       </article>`).join("");
   }

@@ -493,34 +493,34 @@ window.NextPulse.transfer = (() => {
     const to = selectedToLocation();
 
     if (!item) {
-      return "Select a SKU to start the transfer.";
+      return "Transferi başlatmak için stok kalemi seçin.";
     }
 
     if (!from || !to) {
-      return "Select source and destination locations.";
+      return "Kaynak ve hedef lokasyonu seçin.";
     }
 
     if (from === to) {
-      return "Source and destination must be different.";
+      return "Kaynak ve hedef lokasyon farklı olmalıdır.";
     }
 
     if (isFinishedGood(item.categoryCode)) {
       const baseQty = finishedBaseQuantity();
 
       if (baseQty <= 0) {
-        return "Enter pallet, box, and unit quantities.";
+        return "Palet, koli ve birim miktarlarını girin.";
       }
 
-      return `${formatQuantity(palletQuantity(), "PALET")} PALET x ${formatQuantity(boxesPerPallet(), "KOLI")} KOLI x ${formatQuantity(unitsPerBox(), getBaseUnit(item))} ${getBaseUnit(item)} = ${formatQuantity(baseQty, getBaseUnit(item))} ${getBaseUnit(item)} will move ${locationLabel(from)} → ${locationLabel(to)}.`;
+      return `${formatQuantity(palletQuantity(), "PALET")} PALET × ${formatQuantity(boxesPerPallet(), "KOLI")} KOLİ × ${formatQuantity(unitsPerBox(), getBaseUnit(item))} ${getBaseUnit(item)} = ${formatQuantity(baseQty, getBaseUnit(item))} ${getBaseUnit(item)}; ${locationLabel(from)} → ${locationLabel(to)} transfer edilecek.`;
     }
 
     const baseQty = materialBaseQuantity(item);
 
     if (baseQty <= 0) {
-      return "Enter package quantity.";
+      return "Ambalaj miktarını girin.";
     }
 
-    return `${formatQuantity(packageQuantity(), getPackUnit(item))} ${getPackUnit(item)} ${item.description} = ${formatQuantity(baseQty, getBaseUnit(item))} ${getBaseUnit(item)} will move ${locationLabel(from)} → ${locationLabel(to)}.`;
+    return `${formatQuantity(packageQuantity(), getPackUnit(item))} ${getPackUnit(item)} ${item.description} = ${formatQuantity(baseQty, getBaseUnit(item))} ${getBaseUnit(item)}; ${locationLabel(from)} → ${locationLabel(to)} transfer edilecek.`;
   }
 
   function updatePreview() {

@@ -469,16 +469,16 @@ window.NextPulse.production = (() => {
     }
 
     if (!recipe) {
-      preview.textContent = "Select recipe and quantity to create a draft batch.";
+      preview.textContent = "Taslak parti oluşturmak için reçete ve miktar seçin.";
       return;
     }
 
     if (!quantity || quantity <= 0) {
-      preview.textContent = `${recipe.finishedDescription} selected. Enter production quantity.`;
+      preview.textContent = `${recipe.finishedDescription} seçildi. Üretim miktarını girin.`;
       return;
     }
 
-    preview.textContent = `${formatQuantity(quantity)} ${recipe.outputUnit} ${recipe.finishedDescription} will be planned from ${recipe.recipeName}.`;
+    preview.textContent = `${recipe.recipeName} reçetesiyle ${formatQuantity(quantity)} ${recipe.outputUnit} ${recipe.finishedDescription} planlanacak.`;
   }
 
   function renderRecipeOptions() {
@@ -573,8 +573,8 @@ window.NextPulse.production = (() => {
 
     if (preview) {
       preview.textContent = hasWasteEntry
-        ? `${formatQuantity(planned)} planned − ${formatQuantity(waste)} Fire/Zayi = ${formatQuantity(good)} good ${unit}.`
-        : "Enter Fire/Zayi to calculate good output. Enter 0 when there is no waste.";
+        ? `${formatQuantity(planned)} planlanan − ${formatQuantity(waste)} Fire/Zayi = ${formatQuantity(good)} net ${unit}.`
+        : "Net üretimi hesaplamak için Fire/Zayi girin. Fire yoksa 0 girin.";
       preview.classList.toggle("is-error", hasWasteEntry && waste >= planned && planned > 0);
     }
   }
@@ -603,22 +603,22 @@ window.NextPulse.production = (() => {
     const planTitle = document.getElementById("productionPlanTitle");
 
     if (!currentBatch) {
-      if (planLabel) planLabel.textContent = "New Batch";
-      if (planTitle) planTitle.textContent = "Plan production";
+      if (planLabel) planLabel.textContent = "Yeni Parti";
+      if (planTitle) planTitle.textContent = "Üretim Planla";
       [recipeInput, quantityInput, dateInput].forEach((input) => { if (input) input.disabled = false; });
-      if (contentTitle) contentTitle.textContent = "What are you making?";
+      if (contentTitle) contentTitle.textContent = "Ne üretiyorsunuz?";
       if (contentStatus) {
-        contentStatus.textContent = "New batch";
+        contentStatus.textContent = "Yeni parti";
         contentStatus.className = "np-batch-status is-draft";
       }
       if (contentLock) contentLock.hidden = true;
       if (createButton) createButton.disabled = false;
       window.NextPulse.ui.setPageContext("", "production");
       if (title) {
-        title.textContent = "No batch yet";
+        title.textContent = "Henüz parti yok";
       }
       if (copy) {
-        copy.textContent = "Create a draft batch to calculate material requirements from the active recipe.";
+        copy.textContent = "Malzeme ihtiyacını hesaplamak için taslak parti oluşturun.";
       }
       if (planned) {
         planned.textContent = "0";
@@ -637,16 +637,16 @@ window.NextPulse.production = (() => {
       }
       if (batchActions) batchActions.hidden = true;
       if (body) {
-        body.innerHTML = `<tr><td colspan="5" class="np-empty-cell">Material requirements will appear here.</td></tr>`;
+        body.innerHTML = `<tr><td colspan="5" class="np-empty-cell">Malzeme ihtiyaçları burada görünecek.</td></tr>`;
       }
-      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">Material requirements will appear here.</div>`;
+      if (mobileList) mobileList.innerHTML = `<div class="np-mobile-empty">Malzeme ihtiyaçları burada görünecek.</div>`;
       updateWorkflow("DRAFT");
       return;
     }
 
     const batch = currentBatch.batch;
-    if (planLabel) planLabel.textContent = "Selected Batch";
-    if (planTitle) planTitle.textContent = "Continue production";
+    if (planLabel) planLabel.textContent = "Seçili Parti";
+    if (planTitle) planTitle.textContent = "Üretime Devam Et";
     const materials = currentBatch.materials || [];
     const suggestedLines = materials.filter((line) => Number(line.suggestedIssueContainerQuantity || 0) > 0);
 
@@ -655,7 +655,7 @@ window.NextPulse.production = (() => {
     if (quantityInput) quantityInput.value = Number(batch.plannedOutputQuantity || 0);
     if (dateInput && batch.productionDate) dateInput.value = batch.productionDate;
     [recipeInput, quantityInput, dateInput].forEach((input) => { if (input) input.disabled = true; });
-    if (contentTitle) contentTitle.textContent = batch.finishedDescription || batch.recipeName || "Production batch";
+    if (contentTitle) contentTitle.textContent = batch.finishedDescription || batch.recipeName || "Üretim partisi";
     if (contentStatus) {
       contentStatus.textContent = statusLabel(batch.status);
       contentStatus.className = `np-batch-status is-${statusClass(batch.status)}`;
@@ -665,10 +665,10 @@ window.NextPulse.production = (() => {
     window.NextPulse.ui.setPageContext(batch.batchNumber || "Current batch", "production");
 
     if (title) {
-      title.textContent = batch.batchNumber || "Draft batch";
+      title.textContent = batch.batchNumber || "Taslak parti";
     }
     if (copy) {
-      copy.textContent = `${batch.finishedDescription} · Lot ${batch.lotNumber} · ${batch.status}`;
+      copy.textContent = `${batch.finishedDescription} · Lot ${batch.lotNumber} · ${statusLabel(batch.status)}`;
     }
     if (planned) {
       planned.textContent = formatQuantity(batch.plannedOutputQuantity);

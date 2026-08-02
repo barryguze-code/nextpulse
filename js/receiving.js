@@ -280,11 +280,11 @@ window.NextPulse.receiving = (() => {
 
     if (notes) {
       notes.required = required;
-      notes.placeholder = required ? "Required for this reason" : "Optional note";
+      notes.placeholder = required ? "Bu işlem için açıklama zorunlu" : "İsteğe bağlı açıklama";
     }
 
     if (label) {
-      label.textContent = required ? "Notes required" : "Notes";
+      label.textContent = required ? "Açıklama zorunlu" : "Açıklama";
     }
   }
 
@@ -302,11 +302,11 @@ window.NextPulse.receiving = (() => {
 
   function buildReceivingExplanation(item, packageQuantity) {
     if (!item) {
-      return "Select a SKU and package quantity to see what will be received.";
+      return "Mal kabul miktarını görmek için stok kalemi ve ambalaj miktarı seçin.";
     }
 
     if (!Number.isFinite(packageQuantity) || packageQuantity <= 0) {
-      return "Enter package quantity to see the received base quantity.";
+      return "Teslim alınacak temel miktarı görmek için ambalaj miktarını girin.";
     }
 
     const baseQuantity = calculateBaseQuantity(item, packageQuantity);
