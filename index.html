@@ -467,13 +467,13 @@
                   </label>
                   <label class="np-field" data-transfer-finished-field hidden>
                     <span>Boxes on each pallet</span>
-                    <input type="number" id="transferBoxesPerPallet" min="1" step="1" value="250" placeholder="250">
+                    <input type="number" id="transferBoxesPerPallet" min="1" step="1" placeholder="From production configuration">
                   </label>
                   <label class="np-field" data-transfer-finished-field hidden>
                     <span>Cookies per box</span>
-                    <input type="number" id="transferUnitsPerBox" min="1" step="1" value="60" placeholder="60">
+                    <input type="number" id="transferUnitsPerBox" min="1" step="1" placeholder="From production configuration">
                   </label>
-                  <p class="np-field-wide np-field-help" data-transfer-finished-field hidden>Standard: 1 KOLİ = 12 PAKET × 5 cookies = 60 cookies. Change the box count for partial pallets.</p>
+                  <p class="np-field-wide np-field-help" id="transferFinishedPackHelp" data-transfer-finished-field hidden>Packaging standard will load from the selected recipe configuration.</p>
                   <label class="np-field np-field-wide" data-transfer-finished-field hidden>
                     <span>Pallet group / label</span>
                     <input type="text" id="transferPalletLabel" placeholder="Example: Pallets 1–9 or Partial pallet 10">
@@ -854,7 +854,7 @@
   <script src="js/inventory.js?v=20260730-2"></script>
   <script src="js/receiving.js?v=20260723-4"></script>
   <script src="js/production.js?v=20260801-1"></script>
-  <script src="js/transfer.js?v=20260729-2"></script>
+  <script src="js/transfer.js?v=20260802-1"></script>
   <script src="js/orders.js?v=20260729-2"></script>
   <script src="js/app.js?v=20260720-1"></script>
 </body>

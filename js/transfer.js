@@ -3,6 +3,7 @@ window.NextPulse = window.NextPulse || {};
 window.NextPulse.transfer = (() => {
   const TRANSFER_ENDPOINT = "/transfers";
   let catalogItems = [];
+  let packConfigs = new Map();
   let locations = [];
   let lines = [];
   let hasLoaded = false;
@@ -120,8 +121,13 @@ window.NextPulse.transfer = (() => {
     }
 
     try {
-      const rows = await window.NextPulse.api.get("/inventory/summary");
+      const [rows, configs] = await Promise.all([
+        window.NextPulse.api.get("/inventory/summary"),
+        window.NextPulse.api.get("/production/pack-configs")
+      ]);
       catalogItems = normalizeInventoryRows(Array.isArray(rows) ? rows : []);
+      packConfigs = new Map((Array.isArray(configs) ? configs : [])
+        .map((config) => [config.finishedSkuCode, config]));
       hasLoaded = true;
       renderSkuResults();
       renderLocationOptions();
@@ -193,6 +199,7 @@ window.NextPulse.transfer = (() => {
     renderLocationOptions();
     applySmartLocationDefaults();
     updateMode();
+    applyFinishedGoodPackDefaults(item);
     updatePreview();
     document.getElementById(isFinishedSelected() ? "transferPalletQty" : "transferPackageQty")?.focus();
     return true;
@@ -310,6 +317,36 @@ window.NextPulse.transfer = (() => {
 
   function unitsPerBox() {
     return Number(document.getElementById("transferUnitsPerBox")?.value || 0);
+  }
+
+  function packConfigFor(item) {
+    return packConfigs.get(item?.skuCode || "") || null;
+  }
+
+  function applyFinishedGoodPackDefaults(item = selectedItem()) {
+    if (!item || !isFinishedGood(item.categoryCode)) {
+      return;
+    }
+
+    const config = packConfigFor(item);
+    if (!config) {
+      showMessage(`Packaging configuration is missing for ${item.description || item.skuCode}.`, "error");
+      return;
+    }
+
+    const unitsPerPackage = Number(config.unitsPerPackage || 0);
+    const packagesPerCarton = Number(config.packagesPerCarton || 0);
+    const cartonsPerPallet = Number(config.cartonsPerPallet || 0);
+    const cookiesPerCarton = unitsPerPackage * packagesPerCarton;
+    const boxesInput = document.getElementById("transferBoxesPerPallet");
+    const cookiesInput = document.getElementById("transferUnitsPerBox");
+    const help = document.getElementById("transferFinishedPackHelp");
+
+    if (boxesInput && cartonsPerPallet > 0) boxesInput.value = String(cartonsPerPallet);
+    if (cookiesInput && cookiesPerCarton > 0) cookiesInput.value = String(cookiesPerCarton);
+    if (help) {
+      help.textContent = `Configured standard: 1 KOLİ = ${formatQuantity(packagesPerCarton, "PAKET")} PAKET × ${formatQuantity(unitsPerPackage, "ADET")} cookies = ${formatQuantity(cookiesPerCarton, "ADET")} cookies; 1 PALET = ${formatQuantity(cartonsPerPallet, "KOLI")} KOLİ. Change the box count for partial pallets.`;
+    }
   }
 
   function isFinishedSelected() {
@@ -799,8 +836,8 @@ window.NextPulse.transfer = (() => {
     document.getElementById("transferPalletLabel").value = "";
     document.getElementById("transferPackageQty").value = "1";
     document.getElementById("transferPalletQty").value = "1";
-    document.getElementById("transferBoxesPerPallet").value = "250";
-    document.getElementById("transferUnitsPerBox").value = "60";
+    document.getElementById("transferBoxesPerPallet").value = "";
+    document.getElementById("transferUnitsPerBox").value = "";
     clearTransferSku({ focus: false });
     applySmartLocationDefaults();
     showMessage("");
