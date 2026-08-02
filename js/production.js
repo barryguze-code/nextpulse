@@ -2,6 +2,7 @@ window.NextPulse = window.NextPulse || {};
 
 window.NextPulse.production = (() => {
   const DEFAULT_RECIPE_KEY = "nextpulse.production.defaultRecipeVersionId";
+  const DEFAULT_BATCH_QUANTITY = 30000;
   let recipes = [];
   let openBatches = [];
   let currentBatch = null;
@@ -109,6 +110,22 @@ window.NextPulse.production = (() => {
     }
 
     return `${formatQuantity(fullContainers)} ${escapeHtml(containerUnit)} + ${formatQuantity(remainder)} ${escapeHtml(baseUnit)}`;
+  }
+
+  function formatStockBreakdown(baseQuantity, basePerContainer, containerUnit, baseUnit) {
+    const base = Math.max(numericValue(baseQuantity), 0);
+    const perContainer = numericValue(basePerContainer);
+
+    if (isDiscreteUnit(baseUnit)) {
+      return formatPackageAndRemainder(base, perContainer, containerUnit, baseUnit);
+    }
+
+    if (perContainer <= 0 || !containerUnit || containerUnit === baseUnit) {
+      return `${formatQuantity(base)} ${escapeHtml(baseUnit)}`;
+    }
+
+    const containers = base / perContainer;
+    return `${formatQuantity(containers)} ${escapeHtml(containerUnit)} · ${formatQuantity(base)} ${escapeHtml(baseUnit)}`;
   }
 
   function packageInputQuantity(input) {
@@ -782,13 +799,16 @@ window.NextPulse.production = (() => {
       const attribute = isInProgress ? `data-production-consume="${escapeHtml(line.batchMaterialId)}"` : (isDraft ? `data-production-transfer="${escapeHtml(line.batchMaterialId)}"` : "");
       return `<article class="np-mobile-record-card" data-production-material>
         <div class="np-mobile-record-head"><div class="np-mobile-record-title"><strong>${escapeHtml(line.description)}</strong><span>${escapeHtml(line.skuCode)}</span></div><span class="np-order-status">${escapeHtml(batch.status)}</span></div>
-        <div class="np-mobile-record-grid">
-          <div class="np-mobile-record-metric"><span>Required</span><strong>${formatQuantity(requiredContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Factory stock</span><strong>${formatQuantity(factoryContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Production area</span><strong>${formatQuantity(productionContainers)} ${escapeHtml(line.containerUnit)}</strong></div>
-          <div class="np-mobile-record-metric"><span>Base needed</span><strong>${formatPackageAndRemainder(requiredBaseQty, basePerContainer, line.containerUnit, line.baseUnit)}</strong><small>${formatNeededBaseQuantity(requiredBaseQty, line.baseUnit)} ${escapeHtml(line.baseUnit)} total</small></div>
-        </div>
-        <label class="np-field"><span>${isInProgress ? "Consumed quantity" : "Transfer quantity"}</span><span class="np-inline-number"><input type="number" min="0" step="${isDraft ? "1" : "0.01"}" value="${value}" ${attribute} data-base-per-container="${basePerContainer}" data-planned-base="${requiredBaseQty}" data-factory-on-hand-base="${factoryBaseQty}" data-production-on-hand-base="${productionBaseQty}" ${isDraft || isInProgress ? "" : "disabled"}><span>${escapeHtml(line.containerUnit)}</span></span></label>
+        <label class="np-field np-production-mobile-action"><span>${isInProgress ? "Quantity used" : "Move to Üretim Alanı"}</span><span class="np-inline-number"><input type="number" min="0" step="${isDraft ? "1" : "0.01"}" value="${value}" ${attribute} data-base-per-container="${basePerContainer}" data-planned-base="${requiredBaseQty}" data-factory-on-hand-base="${factoryBaseQty}" data-production-on-hand-base="${productionBaseQty}" ${isDraft || isInProgress ? "" : "disabled"}><span>${escapeHtml(line.containerUnit)}</span></span></label>
+        <details class="np-production-material-details">
+          <summary><span><i class="bi bi-info-circle"></i> Stock and quantity details</span><i class="bi bi-chevron-down"></i></summary>
+          <div class="np-mobile-record-grid">
+            <div class="np-mobile-record-metric"><span>Required</span><strong>${formatStockBreakdown(requiredBaseQty, basePerContainer, line.containerUnit, line.baseUnit)}</strong></div>
+            <div class="np-mobile-record-metric"><span>Factory stock</span><strong>${formatStockBreakdown(factoryBaseQty, basePerContainer, line.containerUnit, line.baseUnit)}</strong></div>
+            <div class="np-mobile-record-metric"><span>Production area</span><strong>${formatStockBreakdown(productionBaseQty, basePerContainer, line.containerUnit, line.baseUnit)}</strong></div>
+            <div class="np-mobile-record-metric"><span>Base needed</span><strong>${formatPackageAndRemainder(requiredBaseQty, basePerContainer, line.containerUnit, line.baseUnit)}</strong><small>${formatNeededBaseQuantity(requiredBaseQty, line.baseUnit)} ${escapeHtml(line.baseUnit)} total</small></div>
+          </div>
+        </details>
       </article>`;
     }).join("");
 
@@ -969,7 +989,7 @@ window.NextPulse.production = (() => {
           ? savedRecipeId
           : (recipes[0]?.recipeVersionId || "");
       }
-      document.getElementById("productionQuantity").value = "";
+      document.getElementById("productionQuantity").value = String(DEFAULT_BATCH_QUANTITY);
       document.getElementById("productionDate").value = today();
       document.getElementById("productionNotes").value = "";
       document.getElementById("productionGoodQuantity").value = "";
@@ -1001,7 +1021,7 @@ window.NextPulse.production = (() => {
         ? savedRecipeId
         : (recipes[0]?.recipeVersionId || "");
     }
-    document.getElementById("productionQuantity").value = "";
+    document.getElementById("productionQuantity").value = String(DEFAULT_BATCH_QUANTITY);
     document.getElementById("productionDate").value = today();
     document.getElementById("productionNotes").value = "";
     showMessage("");
@@ -1040,8 +1060,12 @@ window.NextPulse.production = (() => {
 
   function initDefaults() {
     const date = document.getElementById("productionDate");
+    const quantity = document.getElementById("productionQuantity");
     if (date && !date.value) {
       date.value = today();
+    }
+    if (quantity && !quantity.value) {
+      quantity.value = String(DEFAULT_BATCH_QUANTITY);
     }
   }
 
