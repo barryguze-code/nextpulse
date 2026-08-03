@@ -14,7 +14,7 @@
   <link href="css/components.css?v=20260802-3" rel="stylesheet">
   <link href="css/app.css?v=20260719-3" rel="stylesheet">
   <link href="css/orders.css?v=20260802-1" rel="stylesheet">
-  <link href="css/reports.css?v=20260803-1" rel="stylesheet">
+  <link href="css/reports.css?v=20260803-2" rel="stylesheet">
 </head>
 <body>
   <div class="np-app" id="npApp">
@@ -693,9 +693,14 @@
           <div class="np-alert np-reports-alert" id="reportsMessage" hidden></div>
           <div class="np-report-kpis" id="reportsKpis" aria-label="Temel göstergeler"></div>
           <div class="np-report-layout">
-            <section class="np-report-card np-report-card-wide" aria-labelledby="reportLocationTitle">
-              <div class="np-report-card-head"><div><span>LOKASYON GÖRÜNÜMÜ</span><h3 id="reportLocationTitle">Stok Nerede?</h3></div><i class="bi bi-geo-alt"></i></div>
-              <div class="np-report-location-list" id="reportsLocations"></div>
+            <section class="np-report-card np-report-stock-card" aria-labelledby="reportLocationTitle">
+              <div class="np-report-card-head"><div><span>TÜM STOK GÖRÜNÜMÜ</span><h3 id="reportLocationTitle">SKU Stok Seviyeleri</h3></div><i class="bi bi-bar-chart"></i></div>
+              <div class="np-stock-chart-legend" id="reportsStockLegend"></div>
+              <div class="np-report-stock-list" id="reportsLocations"></div>
+            </section>
+            <section class="np-report-card np-report-production-card" aria-labelledby="reportProductionTitle">
+              <div class="np-report-card-head"><div><span>ÜRETİM VERİMLİLİĞİ</span><h3 id="reportProductionTitle">Tüketim, Üretim ve Zayi</h3></div><i class="bi bi-gear-wide-connected"></i></div>
+              <div id="reportsProduction"></div>
             </section>
             <section class="np-report-card" aria-labelledby="reportCategoryTitle">
               <div class="np-report-card-head"><div><span>STOK SAĞLIĞI</span><h3 id="reportCategoryTitle">Kategori Durumu</h3></div><i class="bi bi-boxes"></i></div>
@@ -890,7 +895,7 @@
   <script src="js/production.js?v=20260802-1"></script>
   <script src="js/transfer.js?v=20260802-3"></script>
   <script src="js/orders.js?v=20260802-3"></script>
-  <script src="js/reports.js?v=20260803-1"></script>
+  <script src="js/reports.js?v=20260803-2"></script>
   <script src="js/app.js?v=20260720-1"></script>
 </body>
 </html>
