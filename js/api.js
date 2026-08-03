@@ -48,6 +48,10 @@ window.NextPulse.api = (() => {
     }),
     postEmpty: (path) => request(path, {
       method: "POST"
+    }),
+    put: (path, data) => request(path, {
+      method: "PUT",
+      body: JSON.stringify(data)
     })
   };
 })();

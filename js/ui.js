@@ -17,7 +17,8 @@ window.NextPulse.ui = (() => {
     production: "productionRecipe",
     transfers: "transferSkuSearch",
     orders: "ordersSearch",
-    reports: "refreshReports"
+    reports: "refreshReports",
+    settings: "refreshSettings"
   };
   const pageLabels = {
     home: "Home",
@@ -26,7 +27,8 @@ window.NextPulse.ui = (() => {
     production: "Manufacturing",
     transfers: "Move Stock",
     orders: "Orders & Deliveries",
-    reports: "Reports"
+    reports: "Reports",
+    settings: "Settings"
   };
   const shortcutRegistry = {
     inventory: [
@@ -43,7 +45,8 @@ window.NextPulse.ui = (() => {
     reports: [
       { page: "inventory", title: "Inventory", label: "Check stock", icon: "bi-box-seam" },
       { page: "orders", title: "Orders", label: "Orders", icon: "bi-clipboard-check" }
-    ]
+    ],
+    settings: [{ page: "home", title: "Home", label: "Ana sayfa", icon: "bi-house" }]
   };
 
   function setupSidebar() {
