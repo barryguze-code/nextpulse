@@ -20,3 +20,4 @@
 .np-order-line { display: grid; grid-template-columns: minmax(10rem, 1fr) minmax(16rem, 2fr) auto; gap: 1rem; align-items: center; padding: .7rem .8rem; border: 1px solid var(--np-border); border-radius: var(--np-radius-sm); background: #fff; }
 .np-order-line span:last-child { font-weight: 700; white-space: nowrap; }
 @media (max-width: 800px) { .np-order-stats { grid-template-columns: 1fr; } .np-order-line { grid-template-columns: 1fr; gap: .25rem; } }
+.np-order-delete-button{display:inline-flex;align-items:center;justify-content:center;gap:.5rem;padding:.7rem 1rem;border:1px solid #ffc2cc;border-radius:12px;background:#fff;color:#b11535;font-weight:700}.np-order-delete-button:hover,.np-order-delete-button:focus-visible{background:#fff0f3;border-color:#df1b41}

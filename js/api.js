@@ -52,6 +52,7 @@ window.NextPulse.api = (() => {
     put: (path, data) => request(path, {
       method: "PUT",
       body: JSON.stringify(data)
-    })
+    }),
+    delete: (path) => request(path, { method: "DELETE" })
   };
 })();

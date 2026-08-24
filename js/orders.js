@@ -8,11 +8,14 @@ window.NextPulse.orders = (() => {
 
   const escapeHtml = (value) => String(value ?? "").replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#039;");
   const formatDate = (value) => value ? new Intl.DateTimeFormat("tr-TR", { day: "2-digit", month: "short", year: "numeric" }).format(new Date(`${value}T00:00:00`)) : "—";
-  const statusLabel = (status) => ({ IMPORTED: "Aktarıldı", RESERVED: "Sevk Edildi", CLOSED: "Teslim Edildi", CONFIRMED: "Onaylandı", IN_PROGRESS: "İşlemde", FULFILLED: "Sevk Edildi", CANCELLED: "İptal" })[status] || status || "Bilinmiyor";
+  const statusLabel = (status) => ({ IMPORTED: "Taslak", RESERVED: "Sevk Edildi", CLOSED: "Teslim Edildi", CONFIRMED: "Onaylandı", IN_PROGRESS: "İşlemde", FULFILLED: "Sevk Edildi", CANCELLED: "İptal" })[status] || status || "Bilinmiyor";
 
   function actionMarkup(detail) {
+    const deleteButton = detail.orderStatus === "IMPORTED"
+      ? `<button class="np-order-delete-button" type="button" data-order-delete="${detail.salesOrderId}"><i class="bi bi-trash3"></i> Siparişi Sil</button>`
+      : "";
     if (detail.orderStatus === "IMPORTED") {
-      return `<button class="np-primary-button" type="button" data-order-action="reserve" data-order-id="${detail.salesOrderId}"><i class="bi bi-truck"></i> Hedef'ten Sevk Et</button>`;
+      return `${deleteButton}<button class="np-primary-button" type="button" data-order-action="reserve" data-order-id="${detail.salesOrderId}"><i class="bi bi-truck"></i> Hedef'ten Sevk Et</button>`;
     }
     if (["RESERVED", "FULFILLED"].includes(detail.orderStatus)) {
       return `<button class="np-primary-button" type="button" data-order-action="close" data-order-id="${detail.salesOrderId}"><i class="bi bi-check2-circle"></i> Teslim Edildi</button>`;
@@ -37,10 +40,8 @@ window.NextPulse.orders = (() => {
         || (status === "FULFILLED" && order.orderStatus === "RESERVED");
       return (!search || haystack.includes(search)) && matchesStatus;
     }).sort((left, right) => {
-      const leftClosed = left.orderStatus === "CLOSED" ? 1 : 0;
-      const rightClosed = right.orderStatus === "CLOSED" ? 1 : 0;
-      if (leftClosed !== rightClosed) return leftClosed - rightClosed;
-      return String(left.requestedDeliveryDate || "9999-12-31").localeCompare(String(right.requestedDeliveryDate || "9999-12-31"));
+      const orderDateComparison = String(right.orderDate || "").localeCompare(String(left.orderDate || ""));
+      return orderDateComparison || String(right.createdAt || "").localeCompare(String(left.createdAt || ""));
     });
   }
 
@@ -171,6 +172,27 @@ window.NextPulse.orders = (() => {
     }
   }
 
+  async function deleteOrder(orderId) {
+    const order = orders.find((item) => item.salesOrderId === orderId);
+    const confirmed = await window.NextPulse.ui.confirmAction({
+      type: "danger",
+      kicker: "SİPARİŞ SİLME",
+      title: "Bu sipariş silinsin mi?",
+      message: `${order?.orderNumber || "Sipariş"} ve sipariş kalemleri kalıcı olarak silinecek. Bu işlem geri alınamaz.`,
+      confirmLabel: "Siparişi Sil",
+      cancelLabel: "Vazgeç"
+    });
+    if (!confirmed) return;
+    try {
+      await window.NextPulse.api.delete(`/orders/${orderId}`);
+      showMessage(`${order?.orderNumber || "Sipariş"} silindi.`, "success");
+      expandedOrderId = null;
+      await loadOrders(true);
+    } catch (error) {
+      showMessage(error.message || "Sipariş silinemedi.", "error");
+    }
+  }
+
   async function importGmail() {
     const button = document.getElementById("importGmailOrders");
     button.disabled = true;
@@ -194,6 +216,11 @@ window.NextPulse.orders = (() => {
     document.getElementById("ordersTableBody")?.addEventListener("click", (event) => { const row = event.target.closest("[data-order-row]"); if (row) toggleDetail(row.dataset.orderRow); });
     document.getElementById("ordersMobileList")?.addEventListener("click", (event) => { const button = event.target.closest("[data-mobile-order-open]"); if (button) toggleMobileDetail(button.dataset.mobileOrderOpen); });
     document.addEventListener("click", (event) => {
+      const deleteButton = event.target.closest("[data-order-delete]");
+      if (deleteButton) {
+        deleteOrder(deleteButton.dataset.orderDelete);
+        return;
+      }
       const action = event.target.closest("[data-order-action]");
       if (action) runOrderAction(action.dataset.orderAction, action.dataset.orderId);
     });
