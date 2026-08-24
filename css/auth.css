@@ -159,6 +159,23 @@ body {
   border-top: 1px solid var(--np-border);
 }
 
+.np-auth-legal {
+  display: flex;
+  justify-content: center;
+  gap: 9px;
+  margin-top: 7px;
+}
+
+.np-auth-legal a {
+  color: var(--np-accent);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.np-auth-legal a:hover {
+  text-decoration: underline;
+}
+
 @media (max-width: 900px) {
   .np-auth-page {
     grid-template-columns: 1fr;
