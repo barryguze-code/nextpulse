@@ -20,13 +20,28 @@ window.NextPulse.reports = (() => {
 
   function renderKpis(data) {
     const cards = [
-      ["bi-box-seam", "Stoklu SKU", data.summary.stockedSkus, `${data.summary.totalSkus} aktif SKU`, "is-good"],
-      ["bi-exclamation-triangle", "Kritik stok", data.summary.lowStockSkus, `${data.summary.outOfStockSkus} stok dışı`, data.summary.lowStockSkus + data.summary.outOfStockSkus ? "is-alert" : "is-good"],
-      ["bi-geo-alt", "Lokasyon", data.summary.locationCount, "Aktif stok noktası", ""],
-      ["bi-clipboard-check", "Açık sipariş", data.summary.openOrders, "Sevkiyat bekleyen", ""]
+      ["inventory", "bi-box-seam", "Stoklu SKU", data.summary.stockedSkus, `${data.summary.totalSkus} aktif SKU`, "is-good"],
+      ["alerts", "bi-exclamation-triangle", "Kritik stok", data.summary.lowStockSkus, `${data.summary.outOfStockSkus} stok dışı`, data.summary.lowStockSkus + data.summary.outOfStockSkus ? "is-alert" : "is-good"],
+      ["locations", "bi-geo-alt", "Lokasyon", data.summary.locationCount, "Aktif stok noktası", ""],
+      ["orders", "bi-clipboard-check", "Açık sipariş", data.summary.openOrders, "Sevkiyat bekleyen", ""]
     ];
-    el("reportsKpis").innerHTML = cards.map(([icon, label, value, detail, tone]) => `
-      <article class="np-report-kpi ${tone}"><div class="np-report-kpi-top"><span>${label}</span><i class="bi ${icon} np-report-kpi-icon"></i></div><strong>${integer(value)}</strong><small>${detail}</small></article>`).join("");
+    el("reportsKpis").innerHTML = cards.map(([action, icon, label, value, detail, tone]) => `
+      <button type="button" class="np-report-kpi ${tone}" data-report-action="${action}" aria-label="${label} bölümünü aç"><div class="np-report-kpi-top"><span>${label}</span><i class="bi ${icon} np-report-kpi-icon"></i></div><strong>${integer(value)}</strong><small>${detail}</small><span class="np-report-kpi-link">Görüntüle <i class="bi bi-arrow-right"></i></span></button>`).join("");
+  }
+
+  async function openKpiAction(action) {
+    if (action === "alerts") {
+      window.NextPulse.ui?.openNotifications?.();
+      return;
+    }
+    if (action === "locations") {
+      window.NextPulse.ui?.showPage?.("settings", "Ayarlar");
+      await window.NextPulse.settings?.openSection?.("locations");
+      return;
+    }
+    const pages = { inventory: ["inventory", "Stok"], orders: ["orders", "Siparişler"] };
+    const target = pages[action];
+    if (target) window.NextPulse.ui?.showPage?.(...target);
   }
 
   function renderStockOverview(rows) {
@@ -102,6 +117,10 @@ window.NextPulse.reports = (() => {
   }
 
   document.addEventListener("nextpulse:page-change", (event) => { if (event.detail?.page === "reports") load(); });
-  document.addEventListener("click", (event) => { if (event.target.closest("#refreshReports")) load(true); });
+  document.addEventListener("click", (event) => {
+    if (event.target.closest("#refreshReports")) load(true);
+    const card = event.target.closest("[data-report-action]");
+    if (card) openKpiAction(card.dataset.reportAction);
+  });
   return { load };
 })();

@@ -134,6 +134,16 @@ window.NextPulse.ui = (() => {
     loadInventoryAlerts();
   }
 
+  function openNotifications() {
+    const button = document.getElementById("notificationButton");
+    const popover = document.getElementById("notificationPopover");
+    if (!popover) return;
+    popover.hidden = false;
+    button?.setAttribute("aria-expanded", "true");
+    loadInventoryAlerts();
+    window.setTimeout(() => popover.querySelector("button, [tabindex]")?.focus({ preventScroll: true }), 0);
+  }
+
   function updateCollapseButtons(isCollapsed) {
     document.querySelectorAll("[data-sidebar-collapse]").forEach((button) => {
       button.setAttribute("aria-label", isCollapsed ? "Expand navigation" : "Collapse navigation");
@@ -545,6 +555,7 @@ window.NextPulse.ui = (() => {
   return {
     init,
     showPage,
+    openNotifications,
     confirmAction,
     setPageContext,
     focusFieldError,
