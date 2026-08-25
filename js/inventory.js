@@ -427,7 +427,19 @@ window.NextPulse.inventory = (() => {
       .filter((row) => Number(row.currentBaseQuantity || 0) !== 0);
     const count = activeLocations.length || getLocationRows(item).length;
 
-    return `${count} location${count === 1 ? "" : "s"}`;
+    return document.documentElement.lang === "tr"
+      ? `${count} lokasyon`
+      : `${count} location${count === 1 ? "" : "s"}`;
+  }
+
+  function categoryLabel(code) {
+    const labels = {
+      FINISHED_GOOD: ["Mamul", "Finished Good"],
+      RAW_MATERIAL: ["Hammadde", "Raw Material"],
+      PACKAGING: ["Ambalaj", "Packaging"]
+    };
+    const pair = labels[String(code || "").toUpperCase()];
+    return pair ? pair[document.documentElement.lang === "tr" ? 0 : 1] : (code || "");
   }
 
   function getVisibleColumns() {
@@ -555,7 +567,7 @@ window.NextPulse.inventory = (() => {
             </div>
           </div>
         </td>
-        <td data-column="category">${escapeHtml(item.categoryCode || "")}</td>
+        <td data-column="category">${escapeHtml(categoryLabel(item.categoryCode))}</td>
         <td data-column="location">${escapeHtml(formatLocationSummary(item))}</td>
         <td data-column="packageStock" class="text-end">
           <span class="np-stock-cell">
@@ -589,12 +601,12 @@ window.NextPulse.inventory = (() => {
             <div class="np-mobile-record-title"><strong>${escapeHtml(item.description || "")}</strong><span>${escapeHtml(item.skuCode || "")}</span></div>
             ${renderThumb(item)}
           </div>
-          <p class="np-mobile-record-copy">${escapeHtml(formatLocationSummary(item))} · ${escapeHtml(item.categoryCode || "")}</p>
+          <p class="np-mobile-record-copy">${escapeHtml(formatLocationSummary(item))} · ${escapeHtml(categoryLabel(item.categoryCode))}</p>
           ${renderMeasurements(item)}
           <div class="np-mobile-record-actions">
-            <button class="np-primary-button" type="button" data-inventory-action="receive" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-inboxes"></i> Receive</button>
-            <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="adjust" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-clipboard2-pulse"></i> Adjust</button>
-            <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="details" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-layout-sidebar-reverse"></i> Details</button>
+            <button class="np-primary-button" type="button" data-inventory-action="receive" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-inboxes"></i> ${document.documentElement.lang === "tr" ? "Mal Kabul" : "Receive"}</button>
+            <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="adjust" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-clipboard2-pulse"></i> ${document.documentElement.lang === "tr" ? "Stok Düzelt" : "Adjust"}</button>
+            <button class="btn btn-sm btn-outline-light-subtle" type="button" data-inventory-action="details" data-item-key="${escapeHtml(getItemKey(item))}"><i class="bi bi-layout-sidebar-reverse"></i> ${document.documentElement.lang === "tr" ? "Detay" : "Details"}</button>
           </div>
         </article>`).join("");
     }
@@ -620,11 +632,16 @@ window.NextPulse.inventory = (() => {
   }
 
   function updateFilters() {
-    setOptions(
-      document.getElementById("inventoryCategoryFilter"),
-      uniqueSorted(items.map((item) => item.categoryCode)),
-      "All categories"
-    );
+    const categorySelect = document.getElementById("inventoryCategoryFilter");
+    const categories = uniqueSorted(items.map((item) => item.categoryCode));
+    const currentCategory = categorySelect?.value || "";
+    if (categorySelect) {
+      categorySelect.innerHTML = [
+        `<option value="">${document.documentElement.lang === "tr" ? "Tüm kategoriler" : "All categories"}</option>`,
+        ...categories.map((code) => `<option value="${escapeHtml(code)}">${escapeHtml(categoryLabel(code))}</option>`)
+      ].join("");
+      categorySelect.value = categories.includes(currentCategory) ? currentCategory : "";
+    }
 
     const locations = uniqueSorted(items.map((item) => item.locationCode));
     const locationNamesByCode = new Map(items.map((item) => [
@@ -636,7 +653,7 @@ window.NextPulse.inventory = (() => {
 
     if (locationSelect) {
       locationSelect.innerHTML = [
-        `<option value="">All locations</option>`,
+        `<option value="">${document.documentElement.lang === "tr" ? "Tüm lokasyonlar" : "All locations"}</option>`,
         ...locations.map((code) => `<option value="${escapeHtml(code)}">${escapeHtml(locationNamesByCode.get(code))}</option>`)
       ].join("");
       locationSelect.value = locations.includes(currentValue) ? currentValue : "";
